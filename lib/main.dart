@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,11 +36,21 @@ class _LibraryHomeState extends State<LibraryHome> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'epub', 'txt', 'jpg', 'jpeg', 'png'],
+        withData: true,
       );
       if (!mounted || result == null || result.files.isEmpty) return;
-      setState(() => selectedBook = result.files.single.name);
+      final file = result.files.single;
+      setState(() => selectedBook = file.name);
+      if (file.extension?.toLowerCase() == 'txt' && file.bytes != null) {
+        final content = utf8.decode(file.bytes!, allowMalformed: true);
+        if (!mounted) return;
+        await Navigator.push(context, MaterialPageRoute<void>(
+          builder: (_) => _TextReaderPage(title: file.name, content: content),
+        ));
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Skedari u zgjodh: $selectedBook. Përpunimi nuk është ende aktiv.')),
+        SnackBar(content: Text('Skedari u zgjodh: $selectedBook. Importi i këtij formati është në zhvillim.')),
       );
     } catch (_) {
       if (!mounted) return;
@@ -169,5 +181,20 @@ class _WritingPageState extends State<_WritingPage> {
         const Text('Drafti ruhet lokalisht. Biblioteka me shumë libra dhe eksportimi janë ende në zhvillim.', style: TextStyle(color: Colors.grey)),
       ]),
     )),
+  );
+}
+
+class _TextReaderPage extends StatelessWidget {
+  const _TextReaderPage({required this.title, required this.content});
+  final String title;
+  final String content;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(title)),
+    body: SafeArea(child: SelectionArea(child: ListView(
+      padding: const EdgeInsets.all(24),
+      children: [Text(content, style: const TextStyle(fontSize: 18, height: 1.65))],
+    ))),
   );
 }
