@@ -1,50 +1,8 @@
 import 'package:flutter/material.dart';
-void main() => runApp(const StudioApp());
-class StudioApp extends StatelessWidget {
-  const StudioApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    const gold = Color(0xFFE5BB69);
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Living Library AI',
-      theme: ThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: const Color(0xFF0C1728), colorScheme: ColorScheme.fromSeed(seedColor: gold, brightness: Brightness.dark), useMaterial3: true),
-      home: const HomePage(),
-    );
-  }
-}
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    const gold = Color(0xFFE5BB69);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Living Library AI'), backgroundColor: Colors.transparent),
-      body: SafeArea(child: ListView(padding: const EdgeInsets.all(20), children: [
-        const Icon(Icons.auto_stories_outlined, size: 84, color: gold),
-        const SizedBox(height: 20),
-        Text('Biblioteka jote interaktive', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 12),
-        const Text('Libra • Audio • Shpjegime AI', textAlign: TextAlign.center),
-        const SizedBox(height: 30),
-        const _FeatureTile(icon: Icons.add_photo_alternate_outlined, title: 'Krijo libër', subtitle: 'Fotografi, PDF dhe dokumente'),
-        const _FeatureTile(icon: Icons.menu_book, title: 'Lexuesi', subtitle: 'Faqe, shënime dhe përmbajtje'),
-        const _FeatureTile(icon: Icons.record_voice_over, title: 'Audio & AI', subtitle: 'Lexim dhe shpjegime'),
-        const SizedBox(height: 20),
-        const Text('Versioni 0.1 — ndërfaqe fillestare; funksionet AI nuk janë lidhur ende.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
-      ])),
-    );
-  }
-}
-class _FeatureTile extends StatelessWidget {
-  const _FeatureTile({required this.icon, required this.title, required this.subtitle});
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  @override
-  Widget build(BuildContext context) => Card(
-    color: const Color(0xFF17263B),
-    margin: const EdgeInsets.symmetric(vertical: 7),
-    child: ListTile(leading: Icon(icon, color: const Color(0xFFE5BB69)), title: Text(title), subtitle: Text(subtitle)),
-  );
-}
+void main()=>runApp(const LibraryApp());
+class LibraryApp extends StatelessWidget{const LibraryApp({super.key});@override Widget build(BuildContext context){const gold=Color(0xFFDDBB70);return MaterialApp(debugShowCheckedModeBanner:false,title:'Living Library AI',theme:ThemeData(brightness:Brightness.dark,scaffoldBackgroundColor:const Color(0xFF071B17),colorScheme:ColorScheme.fromSeed(seedColor:gold,brightness:Brightness.dark),useMaterial3:true),home:const LibraryHome());}}
+class LibraryHome extends StatelessWidget{const LibraryHome({super.key});@override Widget build(BuildContext context)=>Scaffold(body:SafeArea(child:ListView(padding:const EdgeInsets.fromLTRB(20,18,20,28),children:[const _Header(),const SizedBox(height:30),Text('Biblioteka që lexon me ty.',style:Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight:FontWeight.w700)),const SizedBox(height:8),const Text('Ktheji faqet e tua në libra interaktivë, ruaj progresin dhe ndërto bibliotekën personale.',style:TextStyle(color:Color(0xFFB7C9C1),height:1.45)),const SizedBox(height:25),const _Shelf(icon:Icons.add_photo_alternate_outlined,title:'Krijo një libër',subtitle:'Foto • skanime • PDF',accent:true),const _Shelf(icon:Icons.auto_stories_outlined,title:'Biblioteka ime',subtitle:'Libra dhe progres leximi'),const _Shelf(icon:Icons.headphones_outlined,title:'Lexim me zë',subtitle:'Audio dhe ndjekje e tekstit'),const _Shelf(icon:Icons.psychology_alt_outlined,title:'Nuk e kuptoj',subtitle:'Shpjegime AI — lidhja vjen më pas'),const _Shelf(icon:Icons.bookmark_outline,title:'Shënime & faqeshënues',subtitle:'Ruaj pjesët që të duhen'),const SizedBox(height:18),const _Privacy()]))) ;}
+class _Header extends StatelessWidget{const _Header();@override Widget build(BuildContext context)=>const Row(children:[_BookMark(),SizedBox(width:14),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('LIVING LIBRARY',style:TextStyle(fontWeight:FontWeight.w800,letterSpacing:1.5,fontSize:17)),SizedBox(height:3),Text('YOUR BOOKS • ALIVE',style:TextStyle(color:Color(0xFFDDBB70),fontSize:11,letterSpacing:1.2))]))]);}
+class _BookMark extends StatelessWidget{const _BookMark();@override Widget build(BuildContext context)=>Container(width:58,height:58,decoration:BoxDecoration(borderRadius:BorderRadius.circular(16),gradient:const LinearGradient(colors:[Color(0xFF17483B),Color(0xFF0B2B24)]),border:Border.all(color:const Color(0xFFDDBB70),width:1.2)),child:const Stack(alignment:Alignment.center,children:[Icon(Icons.menu_book_rounded,color:Color(0xFFDDBB70),size:35),Positioned(top:8,right:9,child:Icon(Icons.auto_awesome,size:12,color:Colors.white))]));}
+class _Shelf extends StatelessWidget{const _Shelf({required this.icon,required this.title,required this.subtitle,this.accent=false});final IconData icon;final String title,subtitle;final bool accent;@override Widget build(BuildContext context)=>Container(margin:const EdgeInsets.only(bottom:12),decoration:BoxDecoration(color:accent?const Color(0xFF123B31):const Color(0xFF0D2A24),borderRadius:BorderRadius.circular(18),border:Border.all(color:accent?const Color(0xFFDDBB70).withValues(alpha:.65):const Color(0xFF235044))),child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:18,vertical:8),leading:Container(width:44,height:44,decoration:BoxDecoration(color:const Color(0xFFDDBB70).withValues(alpha:.10),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:const Color(0xFFDDBB70))),title:Text(title,style:const TextStyle(fontWeight:FontWeight.w700)),subtitle:Text(subtitle,style:const TextStyle(color:Color(0xFF9DB4AA))),trailing:const Icon(Icons.chevron_right,color:Color(0xFFDDBB70))));}
+class _Privacy extends StatelessWidget{const _Privacy();@override Widget build(BuildContext context)=>const Row(children:[Icon(Icons.lock_outline,size:17,color:Color(0xFF829B91)),SizedBox(width:8),Expanded(child:Text('Bibliotekë personale • AI/OCR cloud ende pa kredenciale',style:TextStyle(color:Color(0xFF829B91),fontSize:12))) ]);}
