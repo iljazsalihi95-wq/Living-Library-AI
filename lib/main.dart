@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const LibraryApp());
 
@@ -130,6 +131,24 @@ class _WritingPageState extends State<_WritingPage> {
   final titleController = TextEditingController();
   final textController = TextEditingController();
   @override
+  void initState() {
+    super.initState();
+    _loadDraft();
+  }
+  Future<void> _loadDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    titleController.text = prefs.getString('book_draft_title') ?? '';
+    textController.text = prefs.getString('book_draft_text') ?? '';
+  }
+  Future<void> _saveDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('book_draft_title', titleController.text);
+    await prefs.setString('book_draft_text', textController.text);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Drafti u ruajt në këtë pajisje.')));
+  }
+  @override
   void dispose() {
     titleController.dispose();
     textController.dispose();
@@ -145,7 +164,9 @@ class _WritingPageState extends State<_WritingPage> {
         const SizedBox(height: 16),
         Expanded(child: TextField(controller: textController, expands: true, maxLines: null, minLines: null, textAlignVertical: TextAlignVertical.top, keyboardType: TextInputType.multiline, decoration: const InputDecoration(labelText: 'Shkruaj tekstin e librit', alignLabelWithHint: true, border: OutlineInputBorder()))),
         const SizedBox(height: 12),
-        const Text('Redaktim lokal. Ruajtja e përhershme dhe eksportimi janë ende në zhvillim.', style: TextStyle(color: Colors.grey)),
+        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _saveDraft, icon: const Icon(Icons.save_outlined), label: const Text('Ruaj draftin në telefon'))),
+        const SizedBox(height: 8),
+        const Text('Drafti ruhet lokalisht. Biblioteka me shumë libra dhe eksportimi janë ende në zhvillim.', style: TextStyle(color: Colors.grey)),
       ]),
     )),
   );
