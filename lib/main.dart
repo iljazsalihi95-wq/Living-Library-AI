@@ -29,11 +29,22 @@ class _LibraryHomeState extends State<LibraryHome> {
   String? selectedBook;
 
   Future<void> _import() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'epub', 'txt', 'jpg', 'jpeg', 'png']);
-    if (result == null || result.files.isEmpty) return;
-    setState(() => selectedBook = result.files.single.name);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('U shtua lokalisht: $selectedBook')));
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'epub', 'txt', 'jpg', 'jpeg', 'png'],
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
+      setState(() => selectedBook = result.files.single.name);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Skedari u zgjodh: $selectedBook. Përpunimi nuk është ende aktiv.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Skedari nuk mund të zgjidhej. Provo përsëri.')),
+      );
+    }
   }
 
   @override
