@@ -59,6 +59,8 @@ class _LibraryHomeState extends State<LibraryHome> {
               const Text('Shto dokumente nga telefoni dhe ndërto bibliotekën personale pa i dërguar në cloud.', style: TextStyle(color: Color(0xFFB7C9C1), height: 1.45)),
               const SizedBox(height: 25),
               _Shelf(icon: Icons.add_photo_alternate_outlined, title: 'Krijo një libër', subtitle: selectedBook ?? 'PDF • EPUB • tekst • imazhe', accent: true, onTap: _import),
+              _Shelf(icon: Icons.edit_note_outlined, title: 'Shkruaj librin tim', subtitle: 'Krijo faqe dhe shkruaj tekstin tënd', onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _WritingPage()))),
+              const _Shelf(icon: Icons.mic_none_outlined, title: 'Leximi me zërin tim', subtitle: 'Regjistrim audio — në përgatitje'),
               const _Shelf(icon: Icons.auto_stories_outlined, title: 'Biblioteka ime', subtitle: 'Libra dhe progres leximi'),
               const _Shelf(icon: Icons.headphones_outlined, title: 'Lexim me zë', subtitle: 'Audio dhe ndjekje e tekstit'),
               const _Shelf(icon: Icons.psychology_alt_outlined, title: 'Nuk e kuptoj', subtitle: 'Shpjegime AI — lidhja vjen më pas'),
@@ -116,4 +118,35 @@ class _Privacy extends StatelessWidget {
   const _Privacy();
   @override
   Widget build(BuildContext context) => const Row(children: [Icon(Icons.lock_outline, size: 17, color: Color(0xFF829B91)), SizedBox(width: 8), Expanded(child: Text('Import lokal • pa kredenciale AI/OCR', style: TextStyle(color: Color(0xFF829B91), fontSize: 12)))]);
+}
+
+class _WritingPage extends StatefulWidget {
+  const _WritingPage();
+  @override
+  State<_WritingPage> createState() => _WritingPageState();
+}
+
+class _WritingPageState extends State<_WritingPage> {
+  final titleController = TextEditingController();
+  final textController = TextEditingController();
+  @override
+  void dispose() {
+    titleController.dispose();
+    textController.dispose();
+    super.dispose();
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Shkruaj librin tim')),
+    body: SafeArea(child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(children: [
+        TextField(controller: titleController, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Titulli i librit', border: OutlineInputBorder())),
+        const SizedBox(height: 16),
+        Expanded(child: TextField(controller: textController, expands: true, maxLines: null, minLines: null, textAlignVertical: TextAlignVertical.top, keyboardType: TextInputType.multiline, decoration: const InputDecoration(labelText: 'Shkruaj tekstin e librit', alignLabelWithHint: true, border: OutlineInputBorder()))),
+        const SizedBox(height: 12),
+        const Text('Redaktim lokal. Ruajtja e përhershme dhe eksportimi janë ende në zhvillim.', style: TextStyle(color: Colors.grey)),
+      ]),
+    )),
+  );
 }
