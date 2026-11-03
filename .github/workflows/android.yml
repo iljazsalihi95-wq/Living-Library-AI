@@ -19,9 +19,19 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p = Path('android/app/build.gradle.kts')
-          s = p.read_text()
-          s = s.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36')
+          s = p.read_text().replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36')
           p.write_text(s)
+          PY
+      - name: Repair verified premium-home syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('lib/main.dart')
+          s = p.read_text()
+          old = "label: const Text('Ruaj draftin')))]));"
+          new = "label: const Text('Ruaj draftin')))])));"
+          assert old in s, 'Expected premium-home syntax target not found'
+          p.write_text(s.replace(old, new, 1))
           PY
       - name: Generate original launcher icons
         run: |
