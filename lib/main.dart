@@ -55,6 +55,15 @@ class _LibraryHomeState extends State<LibraryHome> {
   Widget build(BuildContext context) => Scaffold(
         bottomNavigationBar: NavigationBar(
           selectedIndex: 0,
+          onDestinationSelected: (index) {
+            if (index == 1) {
+              Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()));
+            } else if (index == 2) {
+              Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()));
+            } else if (index == 3) {
+              showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (sheetContext) => SafeArea(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Profili privat', style: Theme.of(sheetContext).textTheme.headlineSmall), const SizedBox(height: 12), const Text('Aplikacioni është për testim personal. Nuk kërkohet llogari për draftet lokale.'), const SizedBox(height: 18), FilledButton(onPressed: () => Navigator.pop(sheetContext), child: const Text('Mbyll'))]))));
+            }
+          },
           destinations: const [
             NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Ballina'),
             NavigationDestination(icon: Icon(Icons.auto_stories_outlined), label: 'Biblioteka'),
