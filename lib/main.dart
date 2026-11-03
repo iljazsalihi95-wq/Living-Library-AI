@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/ai_film/pilot_story.dart';
@@ -373,8 +374,77 @@ class _TextReaderPage extends StatefulWidget {
 }
 class _TextReaderPageState extends State<_TextReaderPage> {
   double fontSize = 18;
+  double speechRate = 0.45;
+  bool speaking = false;
+  final FlutterTts _tts = FlutterTts();
+
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(widget.title), actions: [IconButton(icon: const Icon(Icons.text_decrease), onPressed: () => setState(() => fontSize = (fontSize - 2).clamp(14, 32))), IconButton(icon: const Icon(Icons.text_increase), onPressed: () => setState(() => fontSize = (fontSize + 2).clamp(14, 32)))]), body: SelectionArea(child: ListView(padding: const EdgeInsets.all(24), children: [Text(widget.content, style: TextStyle(fontSize: fontSize, height: 1.65))])));
+  void initState() {
+    super.initState();
+    _tts.setLanguage('sq-AL');
+    _tts.setSpeechRate(speechRate);
+    _tts.setCompletionHandler(() { if (mounted) setState(() => speaking = false); });
+    _tts.setCancelHandler(() { if (mounted) setState(() => speaking = false); });
+    _tts.setErrorHandler((_) { if (mounted) setState(() => speaking = false); });
+  }
+
+  Future<void> _toggleSpeech() async {
+    if (speaking) {
+      await _tts.stop();
+      if (mounted) setState(() => speaking = false);
+      return;
+    }
+    if (widget.content.trim().isEmpty) return;
+    try {
+      await _tts.setLanguage('sq-AL');
+      await _tts.setSpeechRate(speechRate);
+      await _tts.awaitSpeakCompletion(false);
+      final result = await _tts.speak(widget.content);
+      if (mounted) setState(() => speaking = result == 1);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Zëri shqip nuk është i disponueshëm në motorin TTS të telefonit.'),
+        ));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(widget.title), actions: [
+      IconButton(tooltip: 'Zvogëlo shkronjat', icon: const Icon(Icons.text_decrease), onPressed: () => setState(() => fontSize = (fontSize - 2).clamp(14, 32))),
+      IconButton(tooltip: 'Zmadho shkronjat', icon: const Icon(Icons.text_increase), onPressed: () => setState(() => fontSize = (fontSize + 2).clamp(14, 32))),
+    ]),
+    body: Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        child: Row(children: [
+          FilledButton.icon(
+            onPressed: _toggleSpeech,
+            icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
+            label: Text(speaking ? 'Ndalo leximin' : 'Lexo me zë'),
+          ),
+          const SizedBox(width: 10),
+          const Text('Shpejtësia'),
+          Expanded(child: Slider(value: speechRate, min: 0.2, max: 0.8, onChanged: (value) async {
+            setState(() => speechRate = value);
+            await _tts.setSpeechRate(value);
+          })),
+        ]),
+      ),
+      Expanded(child: SelectionArea(child: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [Text(widget.content, style: TextStyle(fontSize: fontSize, height: 1.65))],
+      ))),
+    ]),
+  );
 }
 
 class _SavedDraftPage extends StatefulWidget {
