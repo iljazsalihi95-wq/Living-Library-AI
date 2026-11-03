@@ -26,7 +26,7 @@ class FilmScene {
     this.narration = '',
     this.sfx = const [],
     this.characterIds = const [],
-    this.referenceImagePath,
+    this.referenceImagePaths = const [],
     this.generatedVideoPath,
     this.status = FilmSceneStatus.draft,
   });
@@ -39,12 +39,21 @@ class FilmScene {
   final String narration;
   final List<String> sfx;
   final List<String> characterIds;
-  final String? referenceImagePath;
+
+  /// Ordered, owner-approved storyboard frames for this scene.
+  /// Keeping more than one frame lets image-to-video providers preserve the
+  /// beginning/end composition instead of reducing a scene to a slideshow.
+  final List<String> referenceImagePaths;
+
+  /// Backwards-compatible primary frame used by the current scene editor.
+  String? get referenceImagePath =>
+      referenceImagePaths.isEmpty ? null : referenceImagePaths.first;
+
   final String? generatedVideoPath;
   final FilmSceneStatus status;
 
   FilmScene copyWith({
-    String? referenceImagePath,
+    List<String>? referenceImagePaths,
     String? generatedVideoPath,
     FilmSceneStatus? status,
   }) => FilmScene(
@@ -56,7 +65,7 @@ class FilmScene {
         narration: narration,
         sfx: sfx,
         characterIds: characterIds,
-        referenceImagePath: referenceImagePath ?? this.referenceImagePath,
+        referenceImagePaths: referenceImagePaths ?? this.referenceImagePaths,
         generatedVideoPath: generatedVideoPath ?? this.generatedVideoPath,
         status: status ?? this.status,
       );
