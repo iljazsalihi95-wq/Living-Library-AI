@@ -38,6 +38,18 @@ jobs:
                   assert icon.size == (size, size), f'Invalid icon size: {path}'
           print('All five branded Android launcher icons verified')
           PY
+      - name: Verify pilot frames are actually packaged
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          frames = sorted(Path('assets/story').glob('frame_*.jpg'))
+          assert len(frames) == 22, f'Expected 22 pilot frames, found {len(frames)}. Refusing a misleading APK.'
+          for frame in frames:
+              with Image.open(frame) as im:
+                  im.verify()
+          print('Verified all 22 pilot images in repository')
+          PY
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
