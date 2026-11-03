@@ -296,7 +296,7 @@ class _SceneEditorPage extends StatelessWidget {
           _EditorBlock(title: 'Personazhet', text: scene.characterIds.join(' • ')),
           _EditorBlock(title: 'Dialogu / Narratori', text: (scene.dialogue as String).isEmpty && (scene.narration as String).isEmpty ? 'Pa tekst të shtuar — ruhet materiali origjinal.' : '${scene.dialogue}\n${scene.narration}'),
           const SizedBox(height: 10),
-          Row(children: [Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.play_arrow), label: const Text('Preview'))), const SizedBox(width: 10), Expanded(child: FilledButton.icon(onPressed: null, icon: const Icon(Icons.auto_awesome), label: const Text('Gjenero skenën')))]),
+          Row(children: [Expanded(child: OutlinedButton.icon(onPressed: () { showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(title: Text('Skena ${index + 1}: ${scene.title}'), content: SingleChildScrollView(child: Text('${scene.storyText}\n\nLëvizja: ${scene.motionInstructions}\n\nReferenca: ${scene.referenceImagePaths.length} frame')), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mbyll'))])); }, icon: const Icon(Icons.play_arrow), label: const Text('Preview'))), const SizedBox(width: 10), Expanded(child: FilledButton.icon(onPressed: null, icon: const Icon(Icons.auto_awesome), label: const Text('Gjenero skenën')))]),
           const SizedBox(height: 10),
           const Text('Renderimi është i çaktivizuar derisa Worker-i të ketë provider real image-to-video. Nuk krijohet slideshow i rremë.', style: TextStyle(color: Color(0xFF8FA69C), fontSize: 11, height: 1.35)),
         ]),
