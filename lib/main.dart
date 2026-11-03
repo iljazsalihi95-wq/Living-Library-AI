@@ -44,6 +44,10 @@ class _LibraryHomeState extends State<LibraryHome> {
     setState(() => selectedBook = file.name);
     if (['txt', 'md', 'markdown'].contains(file.extension?.toLowerCase())) {
       final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
+      if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('imported_book_title', file.name);
+      await prefs.setString('imported_book_text', content);
       if (!mounted) return;
       await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: file.name, content: content)));
       return;
@@ -453,11 +457,11 @@ class _SavedDraftPage extends StatefulWidget {
   State<_SavedDraftPage> createState() => _SavedDraftPageState();
 }
 class _SavedDraftPageState extends State<_SavedDraftPage> {
-  String title = '', content = '';
+  String title = '', content = '', importedTitle = '', importedText = '';
   bool loading = true;
   @override
   void initState() { super.initState(); _load(); }
-  Future<void> _load() async { final prefs = await SharedPreferences.getInstance(); if (!mounted) return; setState(() { title = prefs.getString('book_draft_title') ?? ''; content = prefs.getString('book_draft_text') ?? ''; loading = false; }); }
+  Future<void> _load() async { final prefs = await SharedPreferences.getInstance(); if (!mounted) return; setState(() { title = prefs.getString('book_draft_title') ?? ''; content = prefs.getString('book_draft_text') ?? ''; importedTitle = prefs.getString('imported_book_title') ?? ''; importedText = prefs.getString('imported_book_text') ?? ''; loading = false; }); }
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Biblioteka ime')), body: loading ? const Center(child: CircularProgressIndicator()) : content.trim().isEmpty ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Nuk ka ende draft të ruajtur. Shkruaj librin tënd dhe ruaje.'))) : ListView(padding: const EdgeInsets.all(20), children: [Card(child: ListTile(title: Text(title.trim().isEmpty ? 'Libri im' : title), subtitle: const Text('Draft lokal • lexim'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: title.trim().isEmpty ? 'Libri im' : title, content: content)))))]));
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Biblioteka ime')), body: loading ? const Center(child: CircularProgressIndicator()) : content.trim().isEmpty && importedText.trim().isEmpty ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Nuk ka ende draft të ruajtur. Shkruaj librin tënd dhe ruaje.'))) : ListView(padding: const EdgeInsets.all(20), children: [if (importedText.trim().isNotEmpty) Card(child: ListTile(title: Text(importedTitle.isEmpty ? 'Libri i importuar' : importedTitle), subtitle: const Text('TXT/Markdown • ruajtur në telefon'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: importedTitle, content: importedText))))), if (content.trim().isNotEmpty) Card(child: ListTile(title: Text(title.trim().isEmpty ? 'Libri im' : title), subtitle: const Text('Draft lokal • lexim'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: title.trim().isEmpty ? 'Libri im' : title, content: content)))))]));
 }
