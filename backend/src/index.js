@@ -30,7 +30,7 @@ export default {
     if (request.method === 'GET' && path === '/health') {
       return json({ service: SERVICE, status: 'ok', configured: Boolean(env.OPENAI_API_KEY && env.BACKEND_ACCESS_TOKEN) });
     }
-    if (path !== '/v1/text') return json({ error: 'Not found' }, 404);
+    if (path !== '/v1/text' && path !== '/v1/scene-plan') return json({ error: 'Not found' }, 404);
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
     if (!authorized(request, env.BACKEND_ACCESS_TOKEN)) return json({ error: 'Unauthorized' }, 401);
     if (!env.OPENAI_API_KEY) return json({ error: 'AI provider is not configured' }, 503);
@@ -41,9 +41,9 @@ export default {
     if (length > 24000) return json({ error: 'Request too large' }, 413);
     let body;
     try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
-    const input = body?.text;
+    const input = path === '/v1/scene-plan' ? body?.sceneText : body?.text;
     if (typeof input !== 'string' || !input.trim() || input.length > MAX_CHARS) {
-      return json({ error: 'text must contain 1–6000 characters' }, 400);
+      return json({ error: 'Input must contain 1–6000 characters' }, 400);
     }
     try {
       const response = await fetch('https://api.openai.com/v1/responses', {
@@ -54,7 +54,7 @@ export default {
         },
         body: JSON.stringify({
           model: 'gpt-4.1-mini',
-          instructions: INSTRUCTION,
+          instructions: path === '/v1/scene-plan' ? 'You are a careful storyboard assistant. Return a concise production plan in standard Albanian with scene motion, camera, lighting, sound, and continuity notes. Do not claim video was generated. Do not invent source images or alter character identities.' : INSTRUCTION,
           input: input,
           max_output_tokens: MAX_OUTPUT_TOKENS,
           store: false,
@@ -66,7 +66,7 @@ export default {
       const output = (data.output || []).flatMap(item => item.content || [])
         .filter(part => part.type === 'output_text').map(part => part.text).join('');
       if (!output) return json({ error: 'AI provider returned no text' }, 502);
-      return json({ text: output });
+      return json(path === '/v1/scene-plan' ? { plan: output, videoGenerated: false } : { text: output });
     } catch {
       return json({ error: 'AI request unavailable' }, 502);
     }
