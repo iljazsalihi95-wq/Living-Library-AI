@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/ai_film/pilot_story.dart';
+import 'features/ai_film/pilot_assets.dart';
 
 const gold = Color(0xFFE2BE72);
 const emerald = Color(0xFF071B17);
@@ -259,6 +260,8 @@ class _PilotStoryPage extends StatelessWidget {
             const Wrap(spacing: 8, runSpacing: 8, children: [_StatusChip('12 skena'), _StatusChip('2 personazhe'), _StatusChip('Image → Video')]),
           ])),
           const SizedBox(height: 18),
+          const _PilotImportControl(),
+          const SizedBox(height: 18),
           const Text('Skenat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
           ...livingLibraryPilot.scenes.asMap().entries.map((entry) => _SceneCard(index: entry.key, scene: entry.value)),
@@ -266,6 +269,60 @@ class _PilotStoryPage extends StatelessWidget {
           Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xFF102A24), borderRadius: BorderRadius.circular(16)), child: const Text('Gjenerimi real i videos nuk simulohet: butoni i renderimit aktivizohet vetëm pasi provider-i image-to-video të lidhet në Worker. Kredencialet nuk futen në APK.', style: TextStyle(color: Color(0xFFADC1B8), height: 1.4))),
         ]),
       );
+}
+
+class _PilotImportControl extends StatefulWidget {
+  const _PilotImportControl();
+  @override
+  State<_PilotImportControl> createState() => _PilotImportControlState();
+}
+
+class _PilotImportControlState extends State<_PilotImportControl> {
+  int count = 0;
+  bool busy = false;
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+  Future<void> _refresh() async {
+    final value = await PilotAssets.installedCount();
+    if (mounted) setState(() => count = value);
+  }
+  Future<void> _import() async {
+    setState(() => busy = true);
+    try {
+      final imported = await PilotAssets.importZip();
+      await _refresh();
+      if (mounted && imported > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('22 fotografitë u ruajtën privatisht në telefon.')));
+      }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Importi dështoi: $error')));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+  @override
+  Widget build(BuildContext context) => Card(
+    color: panel,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Fotografitë origjinale: $count/22', style: const TextStyle(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('Importo paketën origjinale ZIP. Fotografitë ruhen vetëm në këtë pajisje.'),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: busy ? null : _import,
+          icon: const Icon(Icons.folder_zip_outlined),
+          label: Text(busy ? 'Duke importuar...' : 'Importo 22 fotografitë'),
+        ),
+      ]),
+    ),
+  );
 }
 
 class _StatusChip extends StatelessWidget {
@@ -312,9 +369,11 @@ class _SceneEditorPage extends StatelessWidget {
               child: Container(
                 width: 235,
                 color: const Color(0xFF102E27),
-                child: Image.asset(
-                  scene.referenceImagePaths[frameIndex],
-                  fit: BoxFit.cover,
+                child: FutureBuilder(
+                  future: PilotAssets.frame(scene.referenceImagePaths[frameIndex]),
+                  builder: (context, snapshot) => snapshot.hasData && snapshot.data != null
+                      ? Image.file(snapshot.data!, fit: BoxFit.cover)
+                      : Image.asset(scene.referenceImagePaths[frameIndex], fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -326,6 +385,7 @@ class _SceneEditorPage extends StatelessWidget {
                           style: const TextStyle(color: Color(0xFFB6C6BD), fontSize: 12)),
                       ]),
                     ),
+                  ),
                   ),
                 ),
               ),
