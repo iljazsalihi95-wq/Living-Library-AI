@@ -26,5 +26,12 @@ void main() {
     expect(frames.toSet(), hasLength(22));
     expect(frames.first, 'assets/story/frame_01.jpg');
     expect(frames.last, 'assets/story/frame_22.jpg');
+    expect(frames, [for (var i = 1; i <= 22; i++) 'assets/story/frame_${i.toString().padLeft(2, '0')}.jpg']);
+    final characterIds = livingLibraryPilot.characters.map((character) => character.id).toSet();
+    expect(characterIds, hasLength(livingLibraryPilot.characters.length));
+    for (final scene in livingLibraryPilot.scenes) {
+      expect(scene.referenceImagePaths, isNotEmpty, reason: scene.id);
+      expect(scene.characterIds.every(characterIds.contains), isTrue, reason: scene.id);
+    }
   });
 }
