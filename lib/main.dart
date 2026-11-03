@@ -38,11 +38,11 @@ class _LibraryHomeState extends State<LibraryHome> {
   String? selectedBook;
 
   Future<void> _import() async {
-    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'epub', 'txt', 'jpg', 'jpeg', 'png']);
+    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'epub', 'txt', 'md', 'markdown', 'jpg', 'jpeg', 'png']);
     if (!mounted || files.isEmpty) return;
     final file = files.single;
     setState(() => selectedBook = file.name);
-    if (file.extension?.toLowerCase() == 'txt') {
+    if (['txt', 'md', 'markdown'].contains(file.extension?.toLowerCase())) {
       final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
       if (!mounted) return;
       await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: file.name, content: content)));
