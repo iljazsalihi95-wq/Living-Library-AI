@@ -298,7 +298,34 @@ class _SceneEditorPage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text('Skena ${index + 1} • ${scene.title}')),
         body: ListView(padding: const EdgeInsets.all(18), children: [
-          Container(height: 190, decoration: BoxDecoration(color: const Color(0xFF102E27), borderRadius: BorderRadius.circular(22), border: Border.all(color: gold.withValues(alpha: .45))), child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.image_outlined, size: 48, color: gold), SizedBox(height: 10), Text('Frame reference i skenës', style: TextStyle(fontWeight: FontWeight.w800)), SizedBox(height: 5), Text('Imazhi i miratuar lidhet këtu', style: TextStyle(color: Color(0xFF9DB4AA), fontSize: 12))])),
+          SizedBox(height: 190, child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: scene.referenceImagePaths.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, frameIndex) => ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: 235,
+                color: const Color(0xFF102E27),
+                child: Image.asset(
+                  scene.referenceImagePaths[frameIndex],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.image_not_supported_outlined, color: gold, size: 38),
+                        const SizedBox(height: 8),
+                        Text('Fotografia ${frameIndex + 1} nuk është paketuar ende',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xFFB6C6BD), fontSize: 12)),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          )),
           const SizedBox(height: 16),
           _EditorBlock(title: 'Ngjarja', text: scene.storyText),
           _EditorBlock(title: 'Lëvizja & kamera', text: scene.motionInstructions),
