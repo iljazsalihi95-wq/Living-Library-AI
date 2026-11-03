@@ -24,7 +24,7 @@ def import_frames(archive: Path) -> None:
         verified = {}
         for name in EXPECTED:
             data = package.read(entries[name])
-            if not (data.startswith(b"\\xff\\xd8") and data.endswith(b"\\xff\\xd9")):
+            if not (data.startswith(bytes.fromhex("ffd8")) and data.endswith(bytes.fromhex("ffd9"))):
                 raise ValueError(f"Invalid JPEG file: {name}")
             verified[name] = data
     ASSETS.mkdir(parents=True, exist_ok=True)
