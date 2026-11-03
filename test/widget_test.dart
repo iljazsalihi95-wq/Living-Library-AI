@@ -14,6 +14,8 @@ void main() {
 
     final myLibrary = find.text('Biblioteka ime');
     expect(myLibrary, findsOneWidget);
+    await tester.ensureVisible(myLibrary);
+    await tester.pumpAndSettle();
     await tester.tap(myLibrary);
     await tester.pumpAndSettle();
 
