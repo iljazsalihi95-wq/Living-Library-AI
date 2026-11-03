@@ -245,7 +245,7 @@ class _PilotStoryPage extends StatelessWidget {
   const _PilotStoryPage();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(livingLibraryPilot.title)),
+        appBar: AppBar(title: Text(livingLibraryPilot.title), actions: [IconButton(tooltip: 'Dëgjo tregimin', icon: const Icon(Icons.volume_up_outlined), onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: livingLibraryPilot.title, content: livingLibraryPilot.storyText)))]),
         body: ListView(padding: const EdgeInsets.all(18), children: [
           Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(20), border: Border.all(color: gold.withValues(alpha: .45))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('FILM AI • STORYBOARD', style: TextStyle(color: gold, fontWeight: FontWeight.w800, letterSpacing: 1.2, fontSize: 11)),
