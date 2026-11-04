@@ -54,7 +54,11 @@ class _LibraryHomeState extends State<LibraryHome> {
       try {
         final decoded = jsonDecode(prefs.getString('library_books_v1') ?? '[]');
         library = decoded is List
-            ? decoded.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList()
+            ? decoded.whereType<Map>()
+                .where((item) => item.keys.every((key) => key is String))
+                .map((item) => Map<String, dynamic>.from(item))
+                .where((item) => item['title'] is String && item['content'] is String)
+                .toList()
             : <Map<String, dynamic>>[];
       } on FormatException {
         library = <Map<String, dynamic>>[];
