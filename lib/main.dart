@@ -543,6 +543,21 @@ class _TextReaderPageState extends State<_TextReaderPage> {
   double speechRate = 0.45;
   bool speaking = false;
   final FlutterTts _tts = FlutterTts();
+  final TextEditingController _searchController = TextEditingController();
+  String _readerQuery = '';
+  int get _matchCount {
+    final q = _readerQuery.trim().toLowerCase();
+    if (q.isEmpty) return 0;
+    final text = widget.content.toLowerCase();
+    var count = 0;
+    var from = 0;
+    while (true) {
+      final index = text.indexOf(q, from);
+      if (index < 0) return count;
+      count++;
+      from = index + q.length;
+    }
+  }
 
   @override
   void initState() {
@@ -578,6 +593,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _tts.stop();
     super.dispose();
   }
@@ -589,6 +605,14 @@ class _TextReaderPageState extends State<_TextReaderPage> {
       IconButton(tooltip: 'Zmadho shkronjat', icon: const Icon(Icons.text_increase), onPressed: () => setState(() => fontSize = (fontSize + 2).clamp(14, 32))),
     ]),
     body: Column(children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() => _readerQuery = value),
+        decoration: InputDecoration(prefixIcon: const Icon(Icons.search), labelText: 'Kërko brenda librit',
+          suffixText: _readerQuery.isEmpty ? null : '$_matchCount gjetje',
+          suffixIcon: IconButton(tooltip: 'Pastro kërkimin', icon: const Icon(Icons.clear), onPressed: () { _searchController.clear(); setState(() => _readerQuery = ''); }),
+          border: const OutlineInputBorder()),
+      )),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         child: Row(children: [
