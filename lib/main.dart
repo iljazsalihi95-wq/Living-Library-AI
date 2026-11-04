@@ -46,6 +46,9 @@ class _LibraryHomeState extends State<LibraryHome> {
     if (file.extension?.toLowerCase() == 'zip') {
       try {
         final imported = await PilotAssets.importZip(zipBytes: await file.readAsBytes());
+        // Same filenames are reused after reimport; discard decoded old images.
+        imageCache.clear();
+        imageCache.clearLiveImages();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$imported/22 ilustrime u importuan në tregimin pilot.')));
         await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()));
@@ -341,6 +344,10 @@ class _PilotImportControlState extends State<_PilotImportControl> {
     setState(() => busy = true);
     try {
       final imported = await PilotAssets.importZip();
+      if (imported > 0) {
+        imageCache.clear();
+        imageCache.clearLiveImages();
+      }
       await _refresh();
       if (mounted && imported > 0) {
         widget.onImported();
