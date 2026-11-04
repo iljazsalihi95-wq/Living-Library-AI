@@ -36,8 +36,21 @@ class PilotAssets {
     final frames = decodeFrames(bytes);
     final dir = await _directory;
     await dir.create(recursive: true);
-    for (final entry in frames.entries) {
-      await File('${dir.path}/${entry.key}').writeAsBytes(entry.value, flush: true);
+    // Stage all files first; a failed write must not leave a half-imported set.
+    final staged = <File>[];
+    try {
+      for (final entry in frames.entries) {
+        final file = File('${dir.path}/${entry.key}.incoming');
+        await file.writeAsBytes(entry.value, flush: true);
+        staged.add(file);
+      }
+      for (final file in staged) {
+        await file.rename(file.path.substring(0, file.path.length - '.incoming'.length));
+      }
+    } finally {
+      for (final file in staged) {
+        if (await file.exists()) await file.delete();
+      }
     }
     return frames.length;
   }
@@ -55,6 +68,9 @@ class PilotAssets {
       if (data == null) throw const FormatException('Fotografia nuk mund të lexohet.');
       if (data.length < 4 || data[0] != 0xff || data[1] != 0xd8 || data[data.length - 2] != 0xff || data.last != 0xd9) {
         throw const FormatException('Fotografi JPEG e pavlefshme.');
+      }
+      if (frames.containsKey(name)) {
+        throw FormatException('Fotografi e përsëritur në ZIP: $name');
       }
       frames[name] = data;
     }
