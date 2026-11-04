@@ -208,10 +208,10 @@ class _PilotHero extends StatelessWidget {
             SizedBox(height: 14),
             Text('Vlera e namazit me xhemat', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
             SizedBox(height: 8),
-            Text('12 skena • 2 personazhe • editor Film AI', style: TextStyle(color: Color(0xFFC0D2CA))),
+            Text('12 skena • 2 personazhe • storyboard pa video', style: TextStyle(color: Color(0xFFC0D2CA))),
             SizedBox(height: 18),
             Row(children: [
-              _MiniPill('Lexo tregimin'), SizedBox(width: 8), _MiniPill('Shiko filmin'), SizedBox(width: 8), _MiniPill('Krijo Film AI'),
+              _MiniPill('Lexo tregimin'), SizedBox(width: 8), _MiniPill('Shiko skenat'), SizedBox(width: 8), _MiniPill('Importo ilustrimet'),
             ]),
           ]),
         ),
