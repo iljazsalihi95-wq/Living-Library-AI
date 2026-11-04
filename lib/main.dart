@@ -280,8 +280,13 @@ class _RecentReading extends StatelessWidget {
   Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18)), child: const Row(children: [Icon(Icons.history, color: gold), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vlera e namazit me xhemat', style: TextStyle(fontWeight: FontWeight.w700)), SizedBox(height: 3), Text('Tregimi pilot • 12 skena', style: TextStyle(color: Color(0xFF9DB4AA), fontSize: 12))])), Icon(Icons.chevron_right, color: gold)]));
 }
 
-class _PilotStoryPage extends StatelessWidget {
+class _PilotStoryPage extends StatefulWidget {
   const _PilotStoryPage();
+  @override
+  State<_PilotStoryPage> createState() => _PilotStoryPageState();
+}
+
+class _PilotStoryPageState extends State<_PilotStoryPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(livingLibraryPilot.title), actions: [IconButton(tooltip: 'Dëgjo tregimin', icon: const Icon(Icons.volume_up_outlined), onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: livingLibraryPilot.title, content: livingLibraryPilot.storyText))))]),
@@ -294,7 +299,7 @@ class _PilotStoryPage extends StatelessWidget {
             const Wrap(spacing: 8, runSpacing: 8, children: [_StatusChip('12 skena'), _StatusChip('2 personazhe'), _StatusChip('Image → Video')]),
           ])),
           const SizedBox(height: 18),
-          const _PilotImportControl(),
+          _PilotImportControl(onImported: () => setState(() {})),
           const SizedBox(height: 18),
           const Text('Skenat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
@@ -306,7 +311,8 @@ class _PilotStoryPage extends StatelessWidget {
 }
 
 class _PilotImportControl extends StatefulWidget {
-  const _PilotImportControl();
+  const _PilotImportControl({required this.onImported});
+  final VoidCallback onImported;
   @override
   State<_PilotImportControl> createState() => _PilotImportControlState();
 }
@@ -329,6 +335,7 @@ class _PilotImportControlState extends State<_PilotImportControl> {
       final imported = await PilotAssets.importZip();
       await _refresh();
       if (mounted && imported > 0) {
+        widget.onImported();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('22 fotografitë u ruajtën privatisht në telefon.')));
       }
