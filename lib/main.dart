@@ -40,9 +40,24 @@ class _LibraryHomeState extends State<LibraryHome> {
   String? selectedBook;
 
   Future<void> _import() async {
-    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'epub', 'txt', 'md', 'markdown', 'jpg', 'jpeg', 'png']);
+    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'epub', 'txt', 'md', 'markdown', 'jpg', 'jpeg', 'png', 'zip']);
     if (!mounted || files.isEmpty) return;
     final file = files.single;
+    if (file.extension?.toLowerCase() == 'zip') {
+      try {
+        final imported = await PilotAssets.importZip(zipBytes: await file.readAsBytes());
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$imported/22 ilustrime u importuan në tregimin pilot.')));
+        await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()));
+      } on FormatException catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ZIP i pavlefshëm: ${error.message}')));
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Importimi i ilustrimeve dështoi. Kontrollo arkivin ZIP.')));
+      }
+      return;
+    }
     if (['txt', 'md', 'markdown'].contains(file.extension?.toLowerCase())) {
       final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
