@@ -89,24 +89,33 @@ class PilotAssets {
 
   /// Pure decoder: no device access; also exercised by unit tests.
   static Map<String, Uint8List> decodeFrames(Uint8List bytes) {
+    // Reject oversized compressed archives before decompression on mobile.
+    if (bytes.length > 80 * 1024 * 1024) {
+      throw const FormatException('Arkivi ZIP është tepër i madh.');
+    }
     final archive = ZipDecoder().decodeBytes(bytes);
+    var totalUncompressed = 0;
     final frames = <String, Uint8List>{};
     for (final entry in archive) {
       if (!entry.isFile) continue;
       final name = entry.name.split('/').last;
       if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) continue;
-      if (entry.size > 20 * 1024 * 1024) throw const FormatException('Fotografi tepër e madhe.');
+      if (entry.size > 20 * 1024 * 1024) throw const FormatException('Ilustrim tepër i madh.');
+      totalUncompressed += entry.size;
+      if (totalUncompressed > 100 * 1024 * 1024) {
+        throw const FormatException('Ilustrimet në ZIP janë tepër të mëdha.');
+      }
       final data = entry.readBytes();
-      if (data == null) throw const FormatException('Fotografia nuk mund të lexohet.');
+      if (data == null) throw const FormatException('Ilustrimi nuk mund të lexohet.');
       if (data.length < 4 || data[0] != 0xff || data[1] != 0xd8 || data[data.length - 2] != 0xff || data.last != 0xd9) {
-        throw const FormatException('Fotografi JPEG e pavlefshme.');
+        throw const FormatException('Ilustrim JPEG e pavlefshme.');
       }
       if (frames.containsKey(name)) {
-        throw FormatException('Fotografi e përsëritur në ZIP: $name');
+        throw FormatException('Ilustrim e përsëritur në ZIP: $name');
       }
       frames[name] = data;
     }
-    if (frames.length != 22) throw FormatException('Paketa përmban ${frames.length}/22 fotografi. Duhen të gjitha.');
+    if (frames.length != 22) throw FormatException('Paketa përmban ${frames.length}/22 ilustrime. Duhen të gjitha.');
     return frames;
   }
 }
