@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
@@ -371,24 +372,25 @@ class _SceneEditorPage extends StatelessWidget {
               child: Container(
                 width: 235,
                 color: const Color(0xFF102E27),
-                child: FutureBuilder(
+                child: FutureBuilder<File?>(
                   future: PilotAssets.frame(scene.referenceImagePaths[frameIndex]),
-                  builder: (context, snapshot) => snapshot.hasData && snapshot.data != null
-                      ? Image.file(snapshot.data!, fit: BoxFit.cover)
-                      : Image.asset(scene.referenceImagePaths[frameIndex], fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.image_not_supported_outlined, color: gold, size: 38),
-                        const SizedBox(height: 8),
-                        Text('Fotografia ${frameIndex + 1} nuk është paketuar ende',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Color(0xFFB6C6BD), fontSize: 12)),
-                      ]),
-                    ),
-                  ),
-                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return Image.file(snapshot.data!, fit: BoxFit.cover);
+                    }
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.folder_zip_outlined, color: gold, size: 38),
+                          SizedBox(height: 8),
+                          Text('Importo paketën origjinale ZIP nga faqja e pilotit',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFFB6C6BD), fontSize: 12)),
+                        ]),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
