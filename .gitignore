@@ -4,3 +4,6 @@
 *.jks
 *.keystore
 .env
+
+# Owner-supplied private pilot frames: never push to GitHub
+/assets/story/frame_*.jpg
