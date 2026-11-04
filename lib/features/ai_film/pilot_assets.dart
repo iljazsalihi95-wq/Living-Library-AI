@@ -15,7 +15,16 @@ class PilotAssets {
     final dir = await _directory;
     var count = 0;
     for (var i = 1; i <= 22; i++) {
-      if (await File('${dir.path}/frame_${i.toString().padLeft(2, '0')}.jpg').exists()) count++;
+      final file = File('${dir.path}/frame_${i.toString().padLeft(2, '0')}.jpg');
+      if (await file.exists() && await file.length() >= 4) {
+        final handle = await file.open();
+        try {
+          final header = await handle.read(2);
+          if (header.length == 2 && header[0] == 0xff && header[1] == 0xd8) count++;
+        } finally {
+          await handle.close();
+        }
+      }
     }
     return count;
   }
