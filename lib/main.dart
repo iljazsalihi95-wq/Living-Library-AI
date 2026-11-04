@@ -140,7 +140,7 @@ class _LibraryHomeState extends State<LibraryHome> {
               const SizedBox(height: 25),
               const _SectionTitle('Biblioteka Ime'),
               const SizedBox(height: 12),
-              _BookShelf(onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()))),
+              _BookShelf(onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()))),
               const SizedBox(height: 22),
               const _SectionTitle('Leximet e fundit'),
               const SizedBox(height: 10),
