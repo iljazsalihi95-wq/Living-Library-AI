@@ -588,6 +588,36 @@ class _SavedDraftPageState extends State<_SavedDraftPage> {
   @override
   void initState() { super.initState(); _load(); }
   Future<void> _load() async { final prefs = await SharedPreferences.getInstance(); if (!mounted) return; setState(() { title = prefs.getString('book_draft_title') ?? ''; content = prefs.getString('book_draft_text') ?? ''; importedTitle = prefs.getString('imported_book_title') ?? ''; importedText = prefs.getString('imported_book_text') ?? ''; libraryBooks = _safeBooks(prefs.getString('library_books_v1')); loading = false; }); }
+  Future<void> _deleteBook(String bookTitle) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Fshi librin?'),
+        content: Text('Libri "$bookTitle" do të hiqet nga biblioteka lokale.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Anulo')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Fshi')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final updated = libraryBooks.where((book) => book['title'] != bookTitle).toList();
+    final saved = await prefs.setString('library_books_v1', jsonEncode(updated));
+    if (!mounted) return;
+    if (!saved) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fshirja nuk u ruajt.')));
+      return;
+    }
+    if (importedTitle == bookTitle) {
+      await prefs.remove('imported_book_title');
+      await prefs.remove('imported_book_text');
+    }
+    setState(() {
+      libraryBooks = updated;
+      if (importedTitle == bookTitle) { importedTitle = ''; importedText = ''; }
+    });
+  }
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Biblioteka ime')), body: loading ? const Center(child: CircularProgressIndicator()) : content.trim().isEmpty && importedText.trim().isEmpty && libraryBooks.isEmpty ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Nuk ka ende draft të ruajtur. Shkruaj librin tënd dhe ruaje.'))) : ListView(padding: const EdgeInsets.all(20), children: [TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Kërko librin', border: OutlineInputBorder()), onChanged: (value) => setState(() => searchQuery = value.trim().toLowerCase())), const SizedBox(height: 12), for (final book in libraryBooks.where((book) => (book['title'] as String? ?? '').toLowerCase().contains(searchQuery))) Card(child: ListTile(leading: const Icon(Icons.menu_book_outlined), title: Text(book['title'] as String? ?? 'Libër'), subtitle: const Text('Libër i ruajtur • lexim me zë'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: book['title'] as String? ?? 'Libër', content: book['content'] as String? ?? ''))))), if (libraryBooks.isEmpty && importedText.trim().isNotEmpty && importedTitle.toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(importedTitle.isEmpty ? 'Libri i importuar' : importedTitle), subtitle: const Text('TXT/Markdown • ruajtur në telefon'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: importedTitle, content: importedText))))), if (content.trim().isNotEmpty && (title.trim().isEmpty ? 'Libri im' : title).toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(title.trim().isEmpty ? 'Libri im' : title), subtitle: const Text('Draft lokal • lexim'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: title.trim().isEmpty ? 'Libri im' : title, content: content)))))]));
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Biblioteka ime')), body: loading ? const Center(child: CircularProgressIndicator()) : content.trim().isEmpty && importedText.trim().isEmpty && libraryBooks.isEmpty ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Nuk ka ende draft të ruajtur. Shkruaj librin tënd dhe ruaje.'))) : ListView(padding: const EdgeInsets.all(20), children: [TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Kërko librin', border: OutlineInputBorder()), onChanged: (value) => setState(() => searchQuery = value.trim().toLowerCase())), const SizedBox(height: 12), for (final book in libraryBooks.where((book) => (book['title'] as String? ?? '').toLowerCase().contains(searchQuery))) Card(child: ListTile(leading: const Icon(Icons.menu_book_outlined), title: Text(book['title'] as String? ?? 'Libër'), subtitle: const Text('Libër i ruajtur • lexim me zë'), trailing: IconButton(tooltip: 'Fshi librin', icon: const Icon(Icons.delete_outline), onPressed: () => _deleteBook(book['title'] as String? ?? '')), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: book['title'] as String? ?? 'Libër', content: book['content'] as String? ?? ''))))), if (libraryBooks.isEmpty && importedText.trim().isNotEmpty && importedTitle.toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(importedTitle.isEmpty ? 'Libri i importuar' : importedTitle), subtitle: const Text('TXT/Markdown • ruajtur në telefon'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: importedTitle, content: importedText))))), if (content.trim().isNotEmpty && (title.trim().isEmpty ? 'Libri im' : title).toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(title.trim().isEmpty ? 'Libri im' : title), subtitle: const Text('Draft lokal • lexim'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: title.trim().isEmpty ? 'Libri im' : title, content: content)))))]));
 }
