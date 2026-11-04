@@ -299,8 +299,10 @@ class _PilotImportControlState extends State<_PilotImportControl> {
           const SnackBar(content: Text('22 fotografitë u ruajtën privatisht në telefon.')));
       }
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Importi dështoi: $error')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Importi dështoi: $error')));
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
