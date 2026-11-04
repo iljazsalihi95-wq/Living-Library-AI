@@ -43,7 +43,6 @@ class _LibraryHomeState extends State<LibraryHome> {
     final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'epub', 'txt', 'md', 'markdown', 'jpg', 'jpeg', 'png']);
     if (!mounted || files.isEmpty) return;
     final file = files.single;
-    setState(() => selectedBook = file.name);
     if (['txt', 'md', 'markdown'].contains(file.extension?.toLowerCase())) {
       final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
@@ -67,11 +66,12 @@ class _LibraryHomeState extends State<LibraryHome> {
       library.insert(0, {'title': file.name, 'content': content});
       await prefs.setString('library_books_v1', jsonEncode(library));
       if (!mounted) return;
+      setState(() => selectedBook = file.name);
       await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: file.name, content: content)));
       return;
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('U zgjodh ${file.name}. Importi i këtij formati po përgatitet.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Formati ${file.extension?.toUpperCase() ?? 'i zgjedhur'} nuk mbështetet ende për lexim. Përdor TXT ose Markdown.')));
   }
 
   @override
