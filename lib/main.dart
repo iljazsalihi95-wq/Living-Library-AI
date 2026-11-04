@@ -50,7 +50,15 @@ class _LibraryHomeState extends State<LibraryHome> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('imported_book_title', file.name);
       await prefs.setString('imported_book_text', content);
-      final library = (jsonDecode(prefs.getString('library_books_v1') ?? '[]') as List).cast<Map<String, dynamic>>();
+      final List<Map<String, dynamic>> library;
+      try {
+        final decoded = jsonDecode(prefs.getString('library_books_v1') ?? '[]');
+        library = decoded is List
+            ? decoded.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList()
+            : <Map<String, dynamic>>[];
+      } on FormatException {
+        library = <Map<String, dynamic>>[];
+      }
       library.removeWhere((entry) => entry['title'] == file.name);
       library.insert(0, {'title': file.name, 'content': content});
       await prefs.setString('library_books_v1', jsonEncode(library));
