@@ -40,7 +40,7 @@ class _LibraryHomeState extends State<LibraryHome> {
   String? selectedBook;
 
   Future<void> _import() async {
-    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'epub', 'txt', 'md', 'markdown', 'jpg', 'jpeg', 'png', 'zip']);
+    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['txt', 'md', 'markdown', 'zip']);
     if (!mounted || files.isEmpty) return;
     final file = files.single;
     if (file.extension?.toLowerCase() == 'zip') {
@@ -133,7 +133,7 @@ class _LibraryHomeState extends State<LibraryHome> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.12,
                 children: [
-                  _PremiumAction(title: 'Importo libër', subtitle: selectedBook ?? 'TXT / Markdown • lexim me zë', icon: Icons.add_photo_alternate_outlined, onTap: _import),
+                  _PremiumAction(title: 'Importo libër', subtitle: selectedBook ?? 'TXT / Markdown • lexim me zë', icon: Icons.library_books_outlined, onTap: _import),
                   _PremiumAction(title: 'Shkruaj librin', subtitle: 'Draft privat në telefon', icon: Icons.edit_note_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _WritingPage()))),
                   _PremiumAction(title: 'Film AI', subtitle: 'Storyboard • skena • preview', icon: Icons.movie_filter_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()))),
                   _PremiumAction(title: 'Biblioteka ime', subtitle: 'Rafti personal', icon: Icons.auto_stories_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()))),
