@@ -35,22 +35,27 @@ class PilotAssets {
     final bytes = await picked.single.readAsBytes();
     final frames = decodeFrames(bytes);
     final dir = await _directory;
-    await dir.create(recursive: true);
-    // Stage all files first; a failed write must not leave a half-imported set.
-    final staged = <File>[];
+    await dir.parent.create(recursive: true);
+    // Import into a separate directory; keep the previous complete set intact
+    // until every JPEG has been written successfully.
+    final stage = await Directory('${dir.parent.path}/pilot_stage_').createTemp();
     try {
       for (final entry in frames.entries) {
-        final file = File('${dir.path}/${entry.key}.incoming');
-        await file.writeAsBytes(entry.value, flush: true);
-        staged.add(file);
+        await File('${stage.path}/${entry.key}').writeAsBytes(entry.value, flush: true);
       }
-      for (final file in staged) {
-        await file.rename(file.path.substring(0, file.path.length - '.incoming'.length));
+      final backup = Directory('${dir.path}.backup');
+      if (await backup.exists()) await backup.delete(recursive: true);
+      await dir.rename(backup.path);
+      try {
+        await stage.rename(dir.path);
+        await backup.delete(recursive: true);
+      } catch (_) {
+        if (await dir.exists()) await dir.delete(recursive: true);
+        await backup.rename(dir.path);
+        rethrow;
       }
     } finally {
-      for (final file in staged) {
-        if (await file.exists()) await file.delete();
-      }
+      if (await stage.exists()) await stage.delete(recursive: true);
     }
     return frames.length;
   }
