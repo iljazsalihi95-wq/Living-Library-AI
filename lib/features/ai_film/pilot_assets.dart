@@ -45,13 +45,14 @@ class PilotAssets {
       }
       final backup = Directory('${dir.path}.backup');
       if (await backup.exists()) await backup.delete(recursive: true);
-      await dir.rename(backup.path);
+      final hadPrevious = await dir.exists();
+      if (hadPrevious) await dir.rename(backup.path);
       try {
         await stage.rename(dir.path);
-        await backup.delete(recursive: true);
+        if (hadPrevious) await backup.delete(recursive: true);
       } catch (_) {
         if (await dir.exists()) await dir.delete(recursive: true);
-        await backup.rename(dir.path);
+        if (hadPrevious) await backup.rename(dir.path);
         rethrow;
       }
     } finally {
