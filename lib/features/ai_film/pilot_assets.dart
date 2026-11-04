@@ -47,11 +47,13 @@ class PilotAssets {
   }
 
   /// Validates all 22 original frames before replacing the installed set.
-  static Future<int> importZip() async {
-    final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
-    if (picked.isEmpty) return 0;
-    final bytes = await picked.single.readAsBytes();
-    final frames = decodeFrames(bytes);
+  static Future<int> importZip({Uint8List? zipBytes}) async {
+    if (zipBytes == null) {
+      final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
+      if (picked.isEmpty) return 0;
+      zipBytes = await picked.single.readAsBytes();
+    }
+    final frames = decodeFrames(zipBytes);
     final dir = await _directory;
     await dir.parent.create(recursive: true);
     // Recover the last complete import if the app was interrupted after
