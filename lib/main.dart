@@ -570,6 +570,30 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     }
   }
 
+  Widget _readerText() {
+    final query = _readerQuery.trim();
+    final style = TextStyle(fontSize: fontSize, height: 1.65);
+    if (query.isEmpty) return Text(widget.content, style: style);
+    final lower = widget.content.toLowerCase();
+    final needle = query.toLowerCase();
+    final spans = <TextSpan>[];
+    var from = 0;
+    var matches = 0;
+    while (matches < 200) {
+      final at = lower.indexOf(needle, from);
+      if (at < 0) break;
+      if (at > from) spans.add(TextSpan(text: widget.content.substring(from, at)));
+      spans.add(TextSpan(
+        text: widget.content.substring(at, at + query.length),
+        style: const TextStyle(backgroundColor: Color(0xFFE2BE72), color: Color(0xFF071B17), fontWeight: FontWeight.bold),
+      ));
+      from = at + query.length;
+      matches++;
+    }
+    if (from < widget.content.length) spans.add(TextSpan(text: widget.content.substring(from)));
+    return RichText(text: TextSpan(style: style.copyWith(color: Theme.of(context).colorScheme.onSurface), children: spans));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -642,7 +666,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
       ),
       Expanded(child: SelectionArea(child: ListView(
         padding: const EdgeInsets.all(24),
-        children: [Text(widget.content, style: TextStyle(fontSize: fontSize, height: 1.65))],
+        children: [_readerText()],
       ))),
     ]),
   );
