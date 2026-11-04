@@ -307,7 +307,7 @@ class _PilotStoryPageState extends State<_PilotStoryPage> {
             const SizedBox(height: 10),
             Text(livingLibraryPilot.storyText, style: const TextStyle(fontSize: 15, height: 1.5)),
             const SizedBox(height: 15),
-            const Wrap(spacing: 8, runSpacing: 8, children: [_StatusChip('12 skena'), _StatusChip('2 personazhe'), _StatusChip('Image → Video')]),
+            const Wrap(spacing: 8, runSpacing: 8, children: [_StatusChip('12 skena'), _StatusChip('2 personazhe'), _StatusChip('Storyboard • pa renderim video')]),
           ])),
           const SizedBox(height: 18),
           _PilotImportControl(onImported: () => setState(() {})),
@@ -352,7 +352,7 @@ class _PilotImportControlState extends State<_PilotImportControl> {
       if (mounted && imported > 0) {
         widget.onImported();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('22 fotografitë u ruajtën privatisht në telefon.')));
+          SnackBar(content: Text('$imported ilustrime u importuan në telefon.')));
       }
     } catch (error) {
       if (mounted) {
