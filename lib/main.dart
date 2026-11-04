@@ -59,6 +59,10 @@ class _LibraryHomeState extends State<LibraryHome> {
       return;
     }
     if (['txt', 'md', 'markdown'].contains(file.extension?.toLowerCase())) {
+      if (file.size > 10 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është mbi 10 MB. Për të mbrojtur bibliotekën lokale, përdor një skedar më të vogël.')));
+        return;
+      }
       final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
       final prefs = await SharedPreferences.getInstance();
