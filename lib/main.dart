@@ -116,7 +116,7 @@ class _LibraryHomeState extends State<LibraryHome> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.12,
                 children: [
-                  _PremiumAction(title: 'Krijo libër', subtitle: selectedBook ?? 'PDF • EPUB • TXT • foto', icon: Icons.add_photo_alternate_outlined, onTap: _import),
+                  _PremiumAction(title: 'Importo libër', subtitle: selectedBook ?? 'TXT / Markdown • lexim me zë', icon: Icons.add_photo_alternate_outlined, onTap: _import),
                   _PremiumAction(title: 'Shkruaj librin', subtitle: 'Draft privat në telefon', icon: Icons.edit_note_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _WritingPage()))),
                   _PremiumAction(title: 'Film AI', subtitle: 'Storyboard • skena • preview', icon: Icons.movie_filter_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()))),
                   _PremiumAction(title: 'Biblioteka ime', subtitle: 'Rafti personal', icon: Icons.auto_stories_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()))),
@@ -330,14 +330,14 @@ class _PilotImportControlState extends State<_PilotImportControl> {
     child: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Fotografitë origjinale: $count/22', style: const TextStyle(fontWeight: FontWeight.w800)),
+        Text('Ilustrimet e tregimit: $count/22', style: const TextStyle(fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        const Text('Importo paketën origjinale ZIP. Fotografitë ruhen vetëm në këtë pajisje.'),
+        const Text('Importo paketën ZIP me ilustrimet e tregimit. Skedarët ruhen vetëm në këtë pajisje.'),
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: busy ? null : _import,
           icon: const Icon(Icons.folder_zip_outlined),
-          label: Text(busy ? 'Duke importuar...' : 'Importo 22 fotografitë'),
+          label: Text(busy ? 'Duke importuar...' : 'Importo 22 ilustrimet'),
         ),
       ]),
     ),
