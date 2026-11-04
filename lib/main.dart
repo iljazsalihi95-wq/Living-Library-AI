@@ -75,7 +75,9 @@ class _LibraryHomeState extends State<LibraryHome> {
                 .toList()
             : <Map<String, dynamic>>[];
       } on FormatException {
-        library = <Map<String, dynamic>>[];
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biblioteka e ruajtur ka të dhëna të dëmtuara. Importimi u ndal për të mos fshirë librat ekzistues.')));
+        return;
       }
       library.removeWhere((entry) => entry['title'] == file.name);
       library.insert(0, {'title': file.name, 'content': content});
