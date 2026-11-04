@@ -27,6 +27,17 @@ void main() {
     expect(() => PilotAssets.decodeFrames(makeArchive(21)), throwsFormatException);
   });
 
+  test('rejects duplicate frame names even with 22 unique frames', () {
+    final archive = Archive();
+    final bytes = <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
+    for (var i = 1; i <= 22; i++) {
+      final name = 'frame_${i.toString().padLeft(2, '0')}.jpg';
+      archive.addFile(ArchiveFile(name, bytes.length, bytes));
+    }
+    archive.addFile(ArchiveFile('another/frame_01.jpg', bytes.length, bytes));
+    expect(() => PilotAssets.decodeFrames(Uint8List.fromList(ZipEncoder().encode(archive))), throwsFormatException);
+  });
+
   test('rejects malformed JPEG bytes', () {
     expect(() => PilotAssets.decodeFrames(makeArchive(22, corrupt: true)), throwsFormatException);
   });
