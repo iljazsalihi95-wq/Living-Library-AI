@@ -8,6 +8,10 @@ void main() {
     const book = Book(id: 'sample', title: 'Libri im', language: 'sq', chapters: [Chapter(title: 'Hyrje', paragraphs: ['Teksti'])]);
     expect(book.chapters.first.paragraphs.first, 'Teksti');
     expect(const ReadingProgress(bookId: 'sample', chapterIndex: 0, paragraphIndex: 0).isValid, isTrue);
+    expect(const ReadingProgress(bookId: 'sample', chapterIndex: 0, paragraphIndex: 0).isValidFor(book), isTrue);
+    expect(const ReadingProgress(bookId: 'sample', chapterIndex: 1, paragraphIndex: 0).isValidFor(book), isFalse);
+    expect(const ReadingProgress(bookId: 'sample', chapterIndex: 0, paragraphIndex: 1).isValidFor(book), isFalse);
+    expect(const ReadingProgress(bookId: 'other', chapterIndex: 0, paragraphIndex: 0).isValidFor(book), isFalse);
   });
 
   test('Film scene keeps ordered approved reference frames', () {
