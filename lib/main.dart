@@ -50,7 +50,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('imported_book_title', file.name);
       await prefs.setString('imported_book_text', content);
-      final List<Map<String, dynamic>> library;
+      late final List<Map<String, dynamic>> library;
       try {
         final decoded = jsonDecode(prefs.getString('library_books_v1') ?? '[]');
         library = decoded is List
