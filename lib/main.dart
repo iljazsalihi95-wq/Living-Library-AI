@@ -62,8 +62,6 @@ class _LibraryHomeState extends State<LibraryHome> {
       final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('imported_book_title', file.name);
-      await prefs.setString('imported_book_text', content);
       late final List<Map<String, dynamic>> library;
       try {
         final decoded = jsonDecode(prefs.getString('library_books_v1') ?? '[]');
@@ -81,7 +79,13 @@ class _LibraryHomeState extends State<LibraryHome> {
       }
       library.removeWhere((entry) => entry['title'] == file.name);
       library.insert(0, {'title': file.name, 'content': content});
-      await prefs.setString('library_books_v1', jsonEncode(library));
+      final saved = await prefs.setString('library_books_v1', jsonEncode(library));
+      if (!saved) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ruajtja e librit dështoi. Provo përsëri.')));
+        return;
+      }
+      await prefs.setString('imported_book_title', file.name);
+      await prefs.setString('imported_book_text', content);
       if (!mounted) return;
       setState(() => selectedBook = file.name);
       await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: file.name, content: content)));
