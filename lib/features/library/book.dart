@@ -16,4 +16,12 @@ class ReadingProgress {
   final int chapterIndex;
   final int paragraphIndex;
   bool get isValid => chapterIndex >= 0 && paragraphIndex >= 0;
+
+  /// Reject stale bookmarks pointing outside the current book contents.
+  bool isValidFor(Book book) {
+    if (!isValid || bookId != book.id || chapterIndex >= book.chapters.length) {
+      return false;
+    }
+    return paragraphIndex < book.chapters[chapterIndex].paragraphs.length;
+  }
 }
