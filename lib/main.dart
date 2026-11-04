@@ -346,7 +346,17 @@ class _SceneCard extends StatelessWidget {
         child: InkWell(
           onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _SceneEditorPage(index: index, scene: scene))),
           child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
-            Container(width: 48, height: 48, alignment: Alignment.center, decoration: BoxDecoration(color: gold.withValues(alpha: .12), borderRadius: BorderRadius.circular(14)), child: Text('${index + 1}', style: const TextStyle(color: gold, fontSize: 18, fontWeight: FontWeight.w900))),
+            SizedBox(width: 64, height: 56, child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FutureBuilder(
+                future: PilotAssets.frame(scene.referenceImagePaths.first),
+                builder: (context, snapshot) => snapshot.hasData && snapshot.data != null
+                    ? Image.file(snapshot.data!, fit: BoxFit.cover)
+                    : Container(color: gold.withValues(alpha: .12),
+                        alignment: Alignment.center,
+                        child: Text('${index + 1}', style: const TextStyle(color: gold, fontSize: 18, fontWeight: FontWeight.w900))),
+              ),
+            )),
             const SizedBox(width: 13),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(scene.title, style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 5), Text(scene.storyText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFAEC1B9), fontSize: 12))])),
             const Icon(Icons.chevron_right, color: gold),
