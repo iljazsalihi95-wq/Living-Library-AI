@@ -16,15 +16,7 @@ class PilotAssets {
     var count = 0;
     for (var i = 1; i <= 22; i++) {
       final file = File('${dir.path}/frame_${i.toString().padLeft(2, '0')}.jpg');
-      if (await file.exists() && await file.length() >= 4) {
-        final handle = await file.open();
-        try {
-          final header = await handle.read(2);
-          if (header.length == 2 && header[0] == 0xff && header[1] == 0xd8) count++;
-        } finally {
-          await handle.close();
-        }
-      }
+      if (await _isCompleteJpeg(file)) count++;
     }
     return count;
   }
@@ -34,13 +26,20 @@ class PilotAssets {
     if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) return null;
     final dir = await _directory;
     final file = File('${dir.path}/$name');
-    if (!await file.exists() || await file.length() < 4) return null;
+    return await _isCompleteJpeg(file) ? file : null;
+  }
+
+  /// Detects truncated files in persistent storage, not just JPEG headers.
+  static Future<bool> _isCompleteJpeg(File file) async {
+    if (!await file.exists() || await file.length() < 4) return false;
     final handle = await file.open();
     try {
       final header = await handle.read(2);
-      return header.length == 2 && header[0] == 0xff && header[1] == 0xd8
-          ? file
-          : null;
+      await handle.setPosition(await handle.length() - 2);
+      final footer = await handle.read(2);
+      return header.length == 2 && footer.length == 2 &&
+          header[0] == 0xff && header[1] == 0xd8 &&
+          footer[0] == 0xff && footer[1] == 0xd9;
     } finally {
       await handle.close();
     }
