@@ -451,11 +451,55 @@ class _SceneEditorPage extends StatelessWidget {
           _EditorBlock(title: 'Personazhet', text: scene.characterIds.join(' • ')),
           _EditorBlock(title: 'Dialogu / Narratori', text: (scene.dialogue as String).isEmpty && (scene.narration as String).isEmpty ? 'Pa tekst të shtuar — ruhet materiali origjinal.' : '${scene.dialogue}\n${scene.narration}'),
           const SizedBox(height: 10),
-          Row(children: [Expanded(child: OutlinedButton.icon(onPressed: () { showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(title: Text('Skena ${index + 1}: ${scene.title}'), content: SingleChildScrollView(child: Text('${scene.storyText}\n\nLëvizja: ${scene.motionInstructions}\n\nReferenca: ${scene.referenceImagePaths.length} frame')), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mbyll'))])); }, icon: const Icon(Icons.play_arrow), label: const Text('Preview'))), const SizedBox(width: 10), Expanded(child: FilledButton.icon(onPressed: null, icon: const Icon(Icons.auto_awesome), label: const Text('Gjenero skenën')))]),
+          Row(children: [Expanded(child: OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _SceneFramesPage(scene: scene, index: index))), icon: const Icon(Icons.photo_library_outlined), label: const Text('Shiko ilustrimet'))), const SizedBox(width: 10), Expanded(child: FilledButton.icon(onPressed: null, icon: const Icon(Icons.auto_awesome), label: const Text('Gjenero skenën')))]),
           const SizedBox(height: 10),
           const Text('Renderimi është i çaktivizuar derisa Worker-i të ketë provider real image-to-video. Nuk krijohet slideshow i rremë.', style: TextStyle(color: Color(0xFF8FA69C), fontSize: 11, height: 1.35)),
         ]),
       );
+}
+
+/// Shows the actual imported frames, not a simulated generated video.
+class _SceneFramesPage extends StatelessWidget {
+  const _SceneFramesPage({required this.scene, required this.index});
+  final dynamic scene;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text('Ilustrimet • Skena ${index + 1}')),
+    body: PageView.builder(
+      itemCount: scene.referenceImagePaths.length,
+      itemBuilder: (context, frameIndex) => Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(children: [
+          Text('${frameIndex + 1} / ${scene.referenceImagePaths.length} • ${scene.title}',
+              style: const TextStyle(color: gold, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 18),
+          Expanded(child: FutureBuilder<File?>(
+            future: PilotAssets.frame(scene.referenceImagePaths[frameIndex]),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) return const Center(child: Text('Ilustrimi nuk mund të lexohet.'));
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final file = snapshot.data;
+              if (file == null) {
+                return const Center(child: Text('Ilustrimi mungon. Importo ZIP-in origjinal në Studio AI.'));
+              }
+              return InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 5,
+                child: Center(child: Image.file(file, fit: BoxFit.contain)),
+              );
+            },
+          )),
+          const SizedBox(height: 14),
+          const Text('Rrëshqit majtas ose djathtas për ilustrimin tjetër.',
+              style: TextStyle(color: Color(0xFFB6C6BD))),
+        ]),
+      ),
+    ),
+  );
 }
 
 class _EditorBlock extends StatelessWidget {
