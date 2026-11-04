@@ -66,7 +66,7 @@ jobs:
           print(f'Validated {len(frames)} existing pilot images')
           PY
       - name: Test private pilot packaging without owner photographs
-        run: python3 -m unittest discover -s scripts -p 'test_prepare_private_pilot.py'
+        run: python3 -m unittest discover -s scripts -p 'test_*private*.py'
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
