@@ -42,6 +42,10 @@ jobs:
               assert path.is_file(), f'Missing {path}'
               with Image.open(path) as icon:
                   assert icon.size == (size, size), f'Invalid icon size: {path}'
+                  rgb = icon.convert('RGB')
+                  colors = rgb.getcolors(maxcolors=size * size)
+                  assert colors is not None and len(colors) >= 3, f'Blank or placeholder icon: {path}'
+                  assert any(r > 130 and g > 90 and b < 180 for _, (r, g, b) in colors), f'Branded gold accent missing: {path}'
           print('All five branded Android launcher icons verified')
           PY
       - name: Audit optional pilot frames without blocking general library builds
