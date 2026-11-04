@@ -34,7 +34,16 @@ class PilotAssets {
     if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) return null;
     final dir = await _directory;
     final file = File('${dir.path}/$name');
-    return await file.exists() ? file : null;
+    if (!await file.exists() || await file.length() < 4) return null;
+    final handle = await file.open();
+    try {
+      final header = await handle.read(2);
+      return header.length == 2 && header[0] == 0xff && header[1] == 0xd8
+          ? file
+          : null;
+    } finally {
+      await handle.close();
+    }
   }
 
   /// Validates all 22 original frames before replacing the installed set.
@@ -45,6 +54,12 @@ class PilotAssets {
     final frames = decodeFrames(bytes);
     final dir = await _directory;
     await dir.parent.create(recursive: true);
+    // Recover the last complete import if the app was interrupted after
+    // moving the old frames to backup but before activating the new set.
+    final recovery = Directory('${dir.path}.backup');
+    if (!await dir.exists() && await recovery.exists()) {
+      await recovery.rename(dir.path);
+    }
     // Import into a separate directory; keep the previous complete set intact
     // until every JPEG has been written successfully.
     final stage = await Directory('${dir.parent.path}/pilot_stage_').createTemp();
