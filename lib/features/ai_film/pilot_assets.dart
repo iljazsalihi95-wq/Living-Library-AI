@@ -74,11 +74,21 @@ class PilotAssets {
       if (hadPrevious) await dir.rename(backup.path);
       try {
         await stage.rename(dir.path);
-        if (hadPrevious) await backup.delete(recursive: true);
       } catch (_) {
+        // Only roll back if activation failed. Cleanup errors must never
+        // delete a successfully activated 22-frame package.
         if (await dir.exists()) await dir.delete(recursive: true);
         if (hadPrevious) await backup.rename(dir.path);
         rethrow;
+      }
+      // Cleanup is best-effort: a failed backup deletion must not turn a
+      // successful import into data loss. The next import can retry cleanup.
+      if (hadPrevious) {
+        try {
+          await backup.delete(recursive: true);
+        } on FileSystemException {
+          // Keep the valid active set; the backup is harmless.
+        }
       }
     } finally {
       if (await stage.exists()) await stage.delete(recursive: true);
