@@ -127,7 +127,38 @@ class PilotAssets {
         throw const FormatException('Rrugë e pasigurt në arkivin ZIP.');
       }
       final name = parts.last;
-      if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) {
+      // The owner's original 22-frame archive includes a harmless Albanian
+      // README at the ZIP root. Ignore that exact file, not arbitrary extras.
+      if (rawName == 'README_SHQIP.txt') {
+        if (entry.size > 64 * 1024) {
+          throw const FormatException('README është tepër i madh.');
+        }
+        continue;
+      }
+      if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg
+        throw FormatException('Skedar i papritur në ZIP: $name');
+      }
+      // Match the offline ZIP verifier's 12 MiB per-frame limit.
+      if (entry.size > 12 * 1024 * 1024) throw const FormatException('Ilustrim tepër i madh (maksimumi 12 MiB).');
+      totalUncompressed += entry.size;
+      if (totalUncompressed > 80 * 1024 * 1024) {
+        throw const FormatException('Ilustrimet në ZIP janë tepër të mëdha.');
+      }
+      final data = entry.readBytes();
+      if (data == null) throw const FormatException('Ilustrimi nuk mund të lexohet.');
+      if (data.length < 4 || data[0] != 0xff || data[1] != 0xd8 || data[data.length - 2] != 0xff || data.last != 0xd9) {
+        throw const FormatException('Ilustrim JPEG e pavlefshme.');
+      }
+      if (frames.containsKey(name)) {
+        throw FormatException('Ilustrim e përsëritur në ZIP: $name');
+      }
+      frames[name] = data;
+    }
+    if (frames.length != 22) throw FormatException('Paketa përmban ${frames.length}/22 ilustrime. Duhen të gjitha.');
+    return frames;
+  }
+}
+).hasMatch(name)) {
         throw FormatException('Skedar i papritur në ZIP: $name');
       }
       // Match the offline ZIP verifier's 12 MiB per-frame limit.
