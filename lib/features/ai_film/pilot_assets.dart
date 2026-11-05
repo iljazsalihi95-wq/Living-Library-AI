@@ -71,7 +71,13 @@ class PilotAssets {
     final stage = await Directory('${dir.parent.path}/pilot_stage_').createTemp();
     try {
       for (final entry in frames.entries) {
-        await File('${stage.path}/${entry.key}').writeAsBytes(entry.value, flush: true);
+        final target = File('${stage.path}/${entry.key}');
+        await target.writeAsBytes(entry.value, flush: true);
+        // Do not replace a working storyboard with a partially written file.
+        if (await target.length() != entry.value.length ||
+            !await _isCompleteJpeg(target)) {
+          throw FileSystemException('Ilustrimi nuk u ruajt plotësisht', target.path);
+        }
       }
       final backup = Directory('${dir.path}.backup');
       if (await backup.exists()) await backup.delete(recursive: true);
