@@ -90,18 +90,31 @@ class _LibraryHomeState extends State<LibraryHome> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biblioteka e ruajtur ka të dhëna të dëmtuara. Importimi u ndal për të mos fshirë librat ekzistues.')));
         return;
       }
-      library.removeWhere((entry) => entry['title'] == file.name);
-      library.insert(0, {'title': file.name, 'content': content});
+      // Preserve existing books: importing a file with the same name must not
+      // silently replace the reader's previous copy or annotations.
+      final existingTitles = library.map((entry) => entry['title']).whereType<String>().toSet();
+      var importTitle = file.name;
+      if (existingTitles.contains(importTitle)) {
+        final dot = file.name.lastIndexOf('.');
+        final stem = dot > 0 ? file.name.substring(0, dot) : file.name;
+        final suffix = dot > 0 ? file.name.substring(dot) : '';
+        var copy = 2;
+        do {
+          importTitle = '$stem ($copy)$suffix';
+          copy++;
+        } while (existingTitles.contains(importTitle));
+      }
+      library.insert(0, {'title': importTitle, 'content': content});
       final saved = await prefs.setString('library_books_v1', jsonEncode(library));
       if (!saved) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ruajtja e librit dështoi. Provo përsëri.')));
         return;
       }
-      await prefs.setString('imported_book_title', file.name);
+      await prefs.setString('imported_book_title', importTitle);
       await prefs.setString('imported_book_text', content);
       if (!mounted) return;
-      setState(() => selectedBook = file.name);
-      await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: file.name, content: content)));
+      setState(() => selectedBook = importTitle);
+      await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: importTitle, content: content)));
       return;
     }
     if (!mounted) return;
