@@ -107,8 +107,16 @@ class PilotAssets {
     final frames = <String, Uint8List>{};
     for (final entry in archive) {
       if (!entry.isFile) continue;
-      final name = entry.name.split('/').last;
-      if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) continue;
+      // Reject extra files and unsafe ZIP paths rather than silently skipping them.
+      final rawName = entry.name.replaceAll('\\', '/');
+      final parts = rawName.split('/');
+      if (rawName.startsWith('/') || parts.contains('..') || parts.contains('.') || parts.contains('') || rawName.contains('\u0000')) {
+        throw const FormatException('Rrugë e pasigurt në arkivin ZIP.');
+      }
+      final name = parts.last;
+      if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) {
+        throw FormatException('Skedar i papritur në ZIP: $name');
+      }
       // Match the offline ZIP verifier's 12 MiB per-frame limit.
       if (entry.size > 12 * 1024 * 1024) throw const FormatException('Ilustrim tepër i madh (maksimumi 12 MiB).');
       totalUncompressed += entry.size;
