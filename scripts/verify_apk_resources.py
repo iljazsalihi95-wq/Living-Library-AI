@@ -24,7 +24,15 @@ with zipfile.ZipFile(apk) as archive:
             found.add(actual.size)
     assert found == set(expected), 'APK launcher densities do not match generated artwork'
     frames = sorted(Path('assets/story').glob('frame_*.jpg'))
+    expected_names = [f'frame_{number:02d}.jpg' for number in range(1, 23)]
+    assert [frame.name for frame in frames] == expected_names, 'Expected exactly 22 numbered pilot illustrations'
+    for frame in frames:
+        with Image.open(frame) as illustration:
+            illustration.verify()
+        with Image.open(frame) as illustration:
+            assert illustration.format == 'JPEG', f'Not a JPEG: {frame.name}'
+            assert illustration.width >= 64 and illustration.height >= 64, f'Illustration too small: {frame.name}'
     for frame in frames:
         name = 'assets/flutter_assets/' + frame.as_posix()
         assert archive.read(name) == frame.read_bytes(), f'Illustration missing/changed: {frame.name}'
-    print(f'APK verified: ARM64, {len(found)} matching launcher sizes, {len(frames)} original illustrations')
+    print(f'APK verified: ARM64, {len(found)} matching launcher sizes, {len(frames)} bundled JPEG illustrations (provenance not verified)')
