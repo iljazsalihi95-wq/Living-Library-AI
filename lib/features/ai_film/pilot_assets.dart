@@ -50,7 +50,12 @@ class PilotAssets {
     if (zipBytes == null) {
       final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
       if (picked.isEmpty) return 0;
-      zipBytes = await picked.single.readAsBytes();
+      final selected = picked.single;
+      // Check on-disk size before reading into memory (including direct callers).
+      if (selected.path != null && await File(selected.path!).length() > 80 * 1024 * 1024) {
+        throw const FormatException('Arkivi ZIP është tepër i madh.');
+      }
+      zipBytes = await selected.readAsBytes();
     }
     final frames = decodeFrames(zipBytes);
     final dir = await _directory;
