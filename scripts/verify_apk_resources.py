@@ -1,6 +1,8 @@
 """Verify actual APK pixels, ABI and optional approved illustrations."""
 from pathlib import Path
 import io
+import hashlib
+import json
 import zipfile
 from PIL import Image, ImageChops
 
@@ -40,4 +42,7 @@ with zipfile.ZipFile(apk) as archive:
     for frame in frames:
         name = 'assets/flutter_assets/' + frame.as_posix()
         assert archive.read(name) == frame.read_bytes(), f'Illustration missing/changed: {frame.name}'
-    print(f'APK verified: ARM64, {len(found)} matching launcher sizes, {len(frames)} bundled JPEG illustrations (provenance not verified)')
+    manifest = {'provenance_verified': False, 'note': 'Hashes prove packaged bytes, not that artwork matches the owner-approved originals.', 'frames': [{'name': frame.name, 'sha256': hashlib.sha256(frame.read_bytes()).hexdigest()} for frame in frames]}
+    output = apk.with_suffix('.frames.json')
+    output.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+    print(f'APK verified: ARM64, {len(found)} matching launcher sizes, {len(frames)} bundled JPEG illustrations (provenance not verified); SHA-256 manifest: {output}')
