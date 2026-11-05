@@ -573,7 +573,7 @@ class _TextReaderPage extends StatefulWidget {
 }
 class _TextReaderPageState extends State<_TextReaderPage> {
   double fontSize = 18, speechRate = 0.45;
-  bool speaking = false, aiBusy = false;
+  bool speaking = false, speechStarting = false, aiBusy = false;
   String language = 'sq-AL', query = '';
   int current = 0, activeWordStart = -1, activeWordEnd = -1;
   final FlutterTts _tts = FlutterTts();
@@ -658,21 +658,27 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     finally { if (mounted) setState(() => aiBusy = false); }
   }
   Future<void> _toggleSpeech() async {
-    if (speaking) { session++; await _tts.stop(); if (mounted) setState(() => speaking = false); return; }
+    if (speaking || speechStarting) {
+      session++;
+      setState(() { speaking = false; speechStarting = false; activeWordStart = -1; activeWordEnd = -1; });
+      await _tts.stop();
+      return;
+    }
     if (paragraphs.isEmpty) return;
     final run = ++session;
+    setState(() => speechStarting = true);
     try {
       final available = await _tts.isLanguageAvailable(language);
       if (available != true && available != 1) throw const FormatException('Zëri i kësaj gjuhe nuk është i instaluar.');
       await _tts.setLanguage(language); await _tts.setSpeechRate(speechRate); await _tts.awaitSpeakCompletion(true);
       if (!mounted || run != session) return;
-      setState(() => speaking = true);
+      setState(() { speaking = true; speechStarting = false; });
       for (var i = current; i < paragraphs.length && run == session && mounted; i++) {
         _jump(i); setState(() { activeWordStart = -1; activeWordEnd = -1; });
         await _tts.speak(paragraphs[i]);
       }
     } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Leximi u ndal: $error'))); }
-    finally { if (mounted && run == session) setState(() => speaking = false); }
+    finally { if (mounted && run == session) setState(() { speaking = false; speechStarting = false; }); }
   }
   Widget _text(int index) {
     final text = paragraphs[index];
@@ -704,7 +710,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
         PopupMenuButton<String>(tooltip: 'AI për pjesën e zgjedhur', enabled: !aiBusy, onSelected: _ai, itemBuilder: (_) => const [PopupMenuItem(value: 'translate', child: Text('Përkthe pjesën')), PopupMenuItem(value: 'explain', child: Text('Shpjego pjesën'))]),
       ]),
       if (aiBusy) const LinearProgressIndicator(),
-      Row(children: [IconButton(tooltip: speaking ? 'Ndalo' : 'Lexo me zë nga kjo pjesë', onPressed: _toggleSpeech, icon: Icon(speaking ? Icons.stop_circle : Icons.volume_up)), DropdownButton<String>(value: language, onChanged: speaking ? null : (v) => setState(() => language = v!), items: const [DropdownMenuItem(value: 'sq-AL', child: Text('SQ')), DropdownMenuItem(value: 'de-DE', child: Text('DE')), DropdownMenuItem(value: 'en-US', child: Text('EN')), DropdownMenuItem(value: 'ar', child: Text('AR')), DropdownMenuItem(value: 'tr-TR', child: Text('TR'))]), Expanded(child: Slider(value: speechRate, min: .2, max: .8, onChanged: (v) { setState(() => speechRate = v); _tts.setSpeechRate(v); }))]),
+      Row(children: [IconButton(tooltip: speaking || speechStarting ? 'Ndalo' : 'Lexo me zë nga kjo pjesë', onPressed: _toggleSpeech, icon: Icon(speaking || speechStarting ? Icons.stop_circle : Icons.volume_up)), DropdownButton<String>(value: language, onChanged: speaking || speechStarting ? null : (v) => setState(() => language = v!), items: const [DropdownMenuItem(value: 'sq-AL', child: Text('SQ')), DropdownMenuItem(value: 'de-DE', child: Text('DE')), DropdownMenuItem(value: 'en-US', child: Text('EN')), DropdownMenuItem(value: 'ar', child: Text('AR')), DropdownMenuItem(value: 'tr-TR', child: Text('TR'))]), Expanded(child: Slider(value: speechRate, min: .2, max: .8, onChanged: (v) { setState(() => speechRate = v); _tts.setSpeechRate(v); }))]),
       Expanded(child: SelectionArea(child: SingleChildScrollView(controller: scroll, padding: const EdgeInsets.all(20), child: Column(children: [for (var i = 0; i < paragraphs.length; i++) GestureDetector(key: keys[i], onTap: () { if (!speaking) _jump(i); }, child: Container(width: double.infinity, padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 10), decoration: BoxDecoration(color: current == i ? panel : Colors.transparent, borderRadius: BorderRadius.circular(12), border: current == i ? Border.all(color: gold.withValues(alpha: .4)) : null), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_text(i), if ((notes['$i'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(notes['$i']!, style: const TextStyle(color: gold, fontSize: 13)))])))]))))
     ]),
   );
