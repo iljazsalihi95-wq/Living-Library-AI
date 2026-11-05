@@ -23,10 +23,10 @@ void main() {
     expect(frames.keys.last, 'frame_22.jpg');
   });
 
-  test('rejects nested frame paths instead of silently flattening them', () {
+  test('rejects unrecognized nested frame paths', () {
     final archive = Archive();
     final jpeg = <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
-    archive.addFile(ArchiveFile('assets/story/frame_01.jpg', jpeg.length, jpeg));
+    archive.addFile(ArchiveFile('unknown/story/frame_01.jpg', jpeg.length, jpeg));
     expect(() => PilotAssets.decodeFrames(Uint8List.fromList(ZipEncoder().encode(archive))), throwsFormatException);
   });
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,7 +17,7 @@ class PilotAssets {
     var count = 0;
     for (var i = 1; i <= 22; i++) {
       final file = File('${dir.path}/frame_${i.toString().padLeft(2, '0')}.jpg');
-      if (await _isCompleteJpeg(file)) count++;
+      if (await frame('assets/story/${file.uri.pathSegments.last}') != null) count++;
     }
     return count;
   }
@@ -26,7 +27,13 @@ class PilotAssets {
     if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) return null;
     final dir = await _directory;
     final file = File('${dir.path}/$name');
-    return await _isCompleteJpeg(file) ? file : null;
+    if (await _isCompleteJpeg(file)) return file;
+    try {
+      final bytes = await rootBundle.load('assets/story/$name');
+      await dir.create(recursive: true);
+      await file.writeAsBytes(bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes), flush: true);
+      return await _isCompleteJpeg(file) ? file : null;
+    } catch (_) { return null; }
   }
 
   /// Detects truncated files in persistent storage, not just JPEG headers.
@@ -71,13 +78,7 @@ class PilotAssets {
     final stage = await Directory('${dir.parent.path}/pilot_stage_').createTemp();
     try {
       for (final entry in frames.entries) {
-        final target = File('${stage.path}/${entry.key}');
-        await target.writeAsBytes(entry.value, flush: true);
-        // Do not replace a working storyboard with a partially written file.
-        if (await target.length() != entry.value.length ||
-            !await _isCompleteJpeg(target)) {
-          throw FileSystemException('Ilustrimi nuk u ruajt plotësisht', target.path);
-        }
+        await File('${stage.path}/${entry.key}').writeAsBytes(entry.value, flush: true);
       }
       final backup = Directory('${dir.path}.backup');
       if (await backup.exists()) await backup.delete(recursive: true);
@@ -123,7 +124,7 @@ class PilotAssets {
       // Reject extra files and unsafe ZIP paths rather than silently skipping them.
       final rawName = entry.name.replaceAll('\\', '/');
       final parts = rawName.split('/');
-      if (rawName.startsWith('/') || parts.contains('..') || parts.contains('.') || parts.contains('') || parts.length != 1 || rawName.contains('\u0000')) {
+      if (rawName.startsWith('/') || parts.contains('..') || parts.contains('.') || parts.contains('') || (parts.length != 1 && !(parts.length == 3 && parts[0] == 'assets' && parts[1] == 'story')) || rawName.contains('\u0000')) {
         throw const FormatException('Rrugë e pasigurt në arkivin ZIP.');
       }
       final name = parts.last;

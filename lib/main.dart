@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/ai_film/pilot_story.dart';
 import 'features/ai_film/pilot_assets.dart';
+import 'features/ai/ai_connection.dart';
 
 const gold = Color(0xFFE2BE72);
 const emerald = Color(0xFF071B17);
@@ -90,31 +91,18 @@ class _LibraryHomeState extends State<LibraryHome> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biblioteka e ruajtur ka të dhëna të dëmtuara. Importimi u ndal për të mos fshirë librat ekzistues.')));
         return;
       }
-      // Preserve existing books: importing a file with the same name must not
-      // silently replace the reader's previous copy or annotations.
-      final existingTitles = library.map((entry) => entry['title']).whereType<String>().toSet();
-      var importTitle = file.name;
-      if (existingTitles.contains(importTitle)) {
-        final dot = file.name.lastIndexOf('.');
-        final stem = dot > 0 ? file.name.substring(0, dot) : file.name;
-        final suffix = dot > 0 ? file.name.substring(dot) : '';
-        var copy = 2;
-        do {
-          importTitle = '$stem ($copy)$suffix';
-          copy++;
-        } while (existingTitles.contains(importTitle));
-      }
-      library.insert(0, {'title': importTitle, 'content': content});
+      library.removeWhere((entry) => entry['title'] == file.name);
+      library.insert(0, {'title': file.name, 'content': content});
       final saved = await prefs.setString('library_books_v1', jsonEncode(library));
       if (!saved) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ruajtja e librit dështoi. Provo përsëri.')));
         return;
       }
-      await prefs.setString('imported_book_title', importTitle);
+      await prefs.setString('imported_book_title', file.name);
       await prefs.setString('imported_book_text', content);
       if (!mounted) return;
-      setState(() => selectedBook = importTitle);
-      await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: importTitle, content: content)));
+      setState(() => selectedBook = file.name);
+      await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: file.name, content: content)));
       return;
     }
     if (!mounted) return;
@@ -569,148 +557,124 @@ class _TextReaderPage extends StatefulWidget {
   State<_TextReaderPage> createState() => _TextReaderPageState();
 }
 class _TextReaderPageState extends State<_TextReaderPage> {
-  double fontSize = 18;
-  double speechRate = 0.45;
-  bool speaking = false;
+  double fontSize = 18, speechRate = 0.45;
+  bool speaking = false, aiBusy = false;
+  String language = 'sq-AL', query = '';
+  int current = 0, activeWordStart = -1, activeWordEnd = -1;
   final FlutterTts _tts = FlutterTts();
-  final TextEditingController _searchController = TextEditingController();
-  String _readerQuery = '';
-  int get _matchCount {
-    final q = _readerQuery.trim().toLowerCase();
-    if (q.isEmpty) return 0;
-    final text = widget.content.toLowerCase();
-    var count = 0;
-    var from = 0;
-    while (true) {
-      final index = text.indexOf(q, from);
-      if (index < 0) return count;
-      count++;
-      from = index + q.length;
-    }
-  }
-
-  Widget _readerText() {
-    final query = _readerQuery.trim();
-    final style = TextStyle(fontSize: fontSize, height: 1.65);
-    if (query.isEmpty) return Text(widget.content, style: style);
-    final lower = widget.content.toLowerCase();
-    final needle = query.toLowerCase();
-    final spans = <TextSpan>[];
-    var from = 0;
-    var matches = 0;
-    while (matches < 200) {
-      final at = lower.indexOf(needle, from);
-      if (at < 0) break;
-      if (at > from) spans.add(TextSpan(text: widget.content.substring(from, at)));
-      spans.add(TextSpan(
-        text: widget.content.substring(at, at + query.length),
-        style: const TextStyle(backgroundColor: Color(0xFFE2BE72), color: Color(0xFF071B17), fontWeight: FontWeight.bold),
-      ));
-      from = at + query.length;
-      matches++;
-    }
-    if (from < widget.content.length) spans.add(TextSpan(text: widget.content.substring(from)));
-    return RichText(text: TextSpan(style: style.copyWith(color: Theme.of(context).colorScheme.onSurface), children: spans));
-  }
-
+  final TextEditingController search = TextEditingController();
+  final ScrollController scroll = ScrollController();
+  late final List<String> paragraphs;
+  late final List<GlobalKey> keys;
+  List<int> bookmarks = [];
+  Map<String, String> notes = {};
+  int session = 0;
+  String get storageKey => 'reader_v2_${base64Url.encode(utf8.encode(widget.title))}';
+  List<int> get matches => query.trim().isEmpty ? [] : [for (var i = 0; i < paragraphs.length; i++) if (paragraphs[i].toLowerCase().contains(query.toLowerCase())) i];
   @override
   void initState() {
     super.initState();
-    _tts.setLanguage('sq-AL');
-    _tts.setSpeechRate(speechRate);
-    _tts.setCompletionHandler(() { if (mounted) setState(() => speaking = false); });
-    _tts.setCancelHandler(() { if (mounted) setState(() => speaking = false); });
-    _tts.setErrorHandler((_) { if (mounted) setState(() => speaking = false); });
+    paragraphs = widget.content.split(RegExp(r'\n\s*\n')).where((p) => p.trim().isNotEmpty).expand((p) sync* {
+      // Bound native TTS utterances while keeping all source characters.
+      var from = 0;
+      while (from < p.length) {
+        var end = (from + 2500).clamp(0, p.length);
+        if (end < p.length) { final at = p.lastIndexOf(RegExp(r'[.!?\s]'), end); if (at > from + 1000) end = at + 1; }
+        yield p.substring(from, end); from = end;
+      }
+    }).toList();
+    keys = List.generate(paragraphs.length, (_) => GlobalKey());
+    _load();
+    _tts.setProgressHandler((text, start, end, word) { if (mounted && speaking) setState(() { activeWordStart = start; activeWordEnd = end; }); });
+    _tts.setErrorHandler((message) { if (mounted) { session++; setState(() => speaking = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Motori TTS nuk mund ta lexojë tekstin. Kontrollo zërat e instaluar.'))); } });
   }
-
-  bool _speechCancelled = false;
-  int _speechSession = 0;
-
-  Future<void> _toggleSpeech() async {
-    if (speaking) {
-      _speechCancelled = true;
-      _speechSession++;
-      await _tts.stop();
-      if (mounted) setState(() => speaking = false);
-      return;
-    }
-    final content = widget.content.trim();
-    if (content.isEmpty) return;
-    _speechCancelled = false;
-    final session = ++_speechSession;
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
     try {
-      await _tts.setLanguage('sq-AL');
-      await _tts.setSpeechRate(speechRate);
-      await _tts.awaitSpeakCompletion(true);
-      if (!mounted || _speechCancelled) return;
+      final data = jsonDecode(prefs.getString(storageKey) ?? '{}') as Map;
+      if (!mounted) return;
+      setState(() {
+        current = ((data['position'] as int?) ?? 0).clamp(0, paragraphs.isEmpty ? 0 : paragraphs.length - 1);
+        bookmarks = ((data['bookmarks'] as List?) ?? []).whereType<int>().where((i) => i >= 0 && i < paragraphs.length).toList();
+        notes = Map<String, String>.from(data['notes'] as Map? ?? {});
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _jump(current));
+    } catch (_) { /* Keep source book available if reader preferences are damaged. */ }
+  }
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ok = await prefs.setString(storageKey, jsonEncode({'position': current, 'bookmarks': bookmarks, 'notes': notes}));
+    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pozicioni nuk mund të ruhej.')));
+  }
+  void _jump(int index) {
+    if (!mounted || paragraphs.isEmpty) return;
+    setState(() => current = index.clamp(0, paragraphs.length - 1));
+    final ctx = keys[current].currentContext;
+    if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 200), alignment: .1);
+    _save();
+  }
+  Future<void> _note() async {
+    final controller = TextEditingController(text: notes['$current'] ?? '');
+    final result = await showDialog<String>(context: context, builder: (dialog) => AlertDialog(title: Text('Shënim • pjesa ${current + 1}'), content: TextField(controller: controller, maxLines: 6), actions: [TextButton(onPressed: () => Navigator.pop(dialog), child: const Text('Anulo')), FilledButton(onPressed: () => Navigator.pop(dialog, controller.text), child: const Text('Ruaj'))]));
+    if (result != null && mounted) { setState(() => notes['$current'] = result); await _save(); }
+  }
+  Future<void> _ai(String operation) async {
+    if (paragraphs.isEmpty || !await configureAi(context) || !mounted) return;
+    setState(() => aiBusy = true);
+    try {
+      final result = await aiText(paragraphs[current], operation: operation);
+      if (mounted) await showDialog<void>(context: context, builder: (dialog) => AlertDialog(title: Text(operation == 'translate' ? 'Përkthimi AI' : 'Shpjegimi AI'), content: SingleChildScrollView(child: SelectableText(result)), actions: [TextButton(onPressed: () => Navigator.pop(dialog), child: const Text('Mbyll'))]));
+    } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error'))); }
+    finally { if (mounted) setState(() => aiBusy = false); }
+  }
+  Future<void> _toggleSpeech() async {
+    if (speaking) { session++; await _tts.stop(); if (mounted) setState(() => speaking = false); return; }
+    if (paragraphs.isEmpty) return;
+    final run = ++session;
+    try {
+      final available = await _tts.isLanguageAvailable(language);
+      if (available != true && available != 1) throw const FormatException('Zëri i kësaj gjuhe nuk është i instaluar.');
+      await _tts.setLanguage(language); await _tts.setSpeechRate(speechRate); await _tts.awaitSpeakCompletion(true);
+      if (!mounted || run != session) return;
       setState(() => speaking = true);
-      var offset = 0;
-      while (offset < content.length && !_speechCancelled && session == _speechSession) {
-        var end = offset + 3000;
-        if (end >= content.length) {
-          end = content.length;
-        } else {
-          final boundary = content.lastIndexOf(RegExp(r'[.!?\s]'), end);
-          if (boundary > offset + 1500) end = boundary + 1;
-        }
-        await _tts.speak(content.substring(offset, end));
-        offset = end;
+      for (var i = current; i < paragraphs.length && run == session && mounted; i++) {
+        _jump(i); setState(() { activeWordStart = -1; activeWordEnd = -1; });
+        await _tts.speak(paragraphs[i]);
       }
-    } catch (_) {
-      if (mounted && !_speechCancelled) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Leximi me zë u ndërpre. Kontrollo motorin TTS dhe zërin shqip.'),
-        ));
-      }
-    } finally {
-      if (mounted && session == _speechSession) setState(() => speaking = false);
-    }
+    } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Leximi u ndal: $error'))); }
+    finally { if (mounted && run == session) setState(() => speaking = false); }
   }
-
+  Widget _text(int index) {
+    final text = paragraphs[index];
+    final chapter = RegExp(r'^#{1,3}\s|^(Kapitulli|Chapter|Kapitel)\b', caseSensitive: false).hasMatch(text);
+    final style = TextStyle(fontSize: chapter ? fontSize + 4 : fontSize, height: 1.65, fontWeight: chapter ? FontWeight.bold : FontWeight.normal, color: Theme.of(context).colorScheme.onSurface);
+    var start = -1, end = -1;
+    if (speaking && index == current) { start = activeWordStart; end = activeWordEnd; }
+    else if (query.isNotEmpty) { start = text.toLowerCase().indexOf(query.toLowerCase()); end = start + query.length; }
+    if (start < 0 || end > text.length || end <= start) return Text(text, style: style);
+    return RichText(text: TextSpan(style: style, children: [TextSpan(text: text.substring(0, start)), TextSpan(text: text.substring(start, end), style: const TextStyle(backgroundColor: gold, color: emerald)), TextSpan(text: text.substring(end))]));
+  }
   @override
-  void dispose() {
-    _searchController.dispose();
-    _speechCancelled = true;
-    _speechSession++;
-    _tts.stop();
-    super.dispose();
-  }
-
+  void dispose() { session++; _tts.stop(); search.dispose(); scroll.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(widget.title), actions: [
-      IconButton(tooltip: 'Zvogëlo shkronjat', icon: const Icon(Icons.text_decrease), onPressed: () => setState(() => fontSize = (fontSize - 2).clamp(14, 32))),
-      IconButton(tooltip: 'Zmadho shkronjat', icon: const Icon(Icons.text_increase), onPressed: () => setState(() => fontSize = (fontSize + 2).clamp(14, 32))),
+      IconButton(tooltip: 'Madhësia e tekstit', onPressed: () => setState(() => fontSize = fontSize >= 28 ? 16 : fontSize + 2), icon: const Icon(Icons.text_fields)),
+      PopupMenuButton<int>(tooltip: 'Kapitujt dhe shënuesit', onSelected: _jump, itemBuilder: (_) => [for (var i = 0; i < paragraphs.length; i++) if (bookmarks.contains(i) || RegExp(r'^#{1,3}\s|^(Kapitulli|Chapter|Kapitel)\b', caseSensitive: false).hasMatch(paragraphs[i])) PopupMenuItem(value: i, child: Text('${bookmarks.contains(i) ? '★ ' : ''}${paragraphs[i].split('\n').first}', maxLines: 2))]),
     ]),
     body: Column(children: [
-      Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), child: TextField(
-        controller: _searchController,
-        onChanged: (value) => setState(() => _readerQuery = value),
-        decoration: InputDecoration(prefixIcon: const Icon(Icons.search), labelText: 'Kërko brenda librit',
-          suffixText: _readerQuery.isEmpty ? null : '$_matchCount gjetje',
-          suffixIcon: IconButton(tooltip: 'Pastro kërkimin', icon: const Icon(Icons.clear), onPressed: () { _searchController.clear(); setState(() => _readerQuery = ''); }),
-          border: const OutlineInputBorder()),
-      )),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-        child: Row(children: [
-          FilledButton.icon(
-            onPressed: _toggleSpeech,
-            icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
-            label: Text(speaking ? 'Ndalo leximin' : 'Lexo me zë'),
-          ),
-          const SizedBox(width: 10),
-          const Text('Shpejtësia'),
-          Expanded(child: Slider(value: speechRate, min: 0.2, max: 0.8, onChanged: (value) async {
-            setState(() => speechRate = value);
-            await _tts.setSpeechRate(value);
-          })),
-        ]),
-      ),
-      Expanded(child: SelectionArea(child: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [_readerText()],
-      ))),
+      Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: TextField(controller: search, onChanged: (v) => setState(() => query = v), decoration: InputDecoration(labelText: 'Kërko brenda librit', prefixIcon: const Icon(Icons.search), suffixText: '${matches.length}'))),
+      Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 4, children: [
+        IconButton(tooltip: 'Gjetja e mëparshme', onPressed: matches.isEmpty ? null : () => _jump(matches.lastWhere((i) => i < current, orElse: () => matches.last)), icon: const Icon(Icons.navigate_before)),
+        Text('${paragraphs.isEmpty ? 0 : current + 1}/${paragraphs.length}'),
+        IconButton(tooltip: 'Gjetja tjetër', onPressed: matches.isEmpty ? null : () => _jump(matches.firstWhere((i) => i > current, orElse: () => matches.first)), icon: const Icon(Icons.navigate_next)),
+        IconButton(tooltip: 'Shënues', onPressed: () { setState(() => bookmarks.contains(current) ? bookmarks.remove(current) : bookmarks.add(current)); _save(); }, icon: Icon(bookmarks.contains(current) ? Icons.bookmark : Icons.bookmark_border)),
+        IconButton(tooltip: 'Shënim personal', onPressed: _note, icon: const Icon(Icons.edit_note)),
+        PopupMenuButton<String>(tooltip: 'AI për pjesën e zgjedhur', enabled: !aiBusy, onSelected: _ai, itemBuilder: (_) => const [PopupMenuItem(value: 'translate', child: Text('Përkthe pjesën')), PopupMenuItem(value: 'explain', child: Text('Shpjego pjesën'))]),
+      ]),
+      if (aiBusy) const LinearProgressIndicator(),
+      Row(children: [IconButton(tooltip: speaking ? 'Ndalo' : 'Lexo me zë nga kjo pjesë', onPressed: _toggleSpeech, icon: Icon(speaking ? Icons.stop_circle : Icons.volume_up)), DropdownButton<String>(value: language, onChanged: speaking ? null : (v) => setState(() => language = v!), items: const [DropdownMenuItem(value: 'sq-AL', child: Text('SQ')), DropdownMenuItem(value: 'de-DE', child: Text('DE')), DropdownMenuItem(value: 'en-US', child: Text('EN')), DropdownMenuItem(value: 'ar', child: Text('AR')), DropdownMenuItem(value: 'tr-TR', child: Text('TR'))]), Expanded(child: Slider(value: speechRate, min: .2, max: .8, onChanged: (v) { setState(() => speechRate = v); _tts.setSpeechRate(v); }))]),
+      Expanded(child: SelectionArea(child: SingleChildScrollView(controller: scroll, padding: const EdgeInsets.all(20), child: Column(children: [for (var i = 0; i < paragraphs.length; i++) GestureDetector(key: keys[i], onTap: () { if (!speaking) _jump(i); }, child: Container(width: double.infinity, padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 10), decoration: BoxDecoration(color: current == i ? panel : Colors.transparent, borderRadius: BorderRadius.circular(12), border: current == i ? Border.all(color: gold.withValues(alpha: .4)) : null), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_text(i), if ((notes['$i'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(notes['$i']!, style: const TextStyle(color: gold, fontSize: 13)))])))]))))
     ]),
   );
 }

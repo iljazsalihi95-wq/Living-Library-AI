@@ -40,11 +40,18 @@ export default {
     const length = Number(request.headers.get('Content-Length') || 0);
     if (length > 24000) return json({ error: 'Request too large' }, 413);
     let body;
-    try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    try { const raw = await request.text(); if (raw.length > 12000) return json({ error: 'Request too large' }, 413); body = JSON.parse(raw); } catch { return json({ error: 'Invalid JSON' }, 400); }
     const input = path === '/v1/scene-plan' ? body?.sceneText : body?.text;
     if (typeof input !== 'string' || !input.trim() || input.length > MAX_CHARS) {
       return json({ error: 'Input must contain 1–6000 characters' }, 400);
     }
+    const languages = { sq: 'standard Albanian', de: 'German', en: 'English', tr: 'Turkish', ar: 'Arabic' };
+    const target = body.targetLanguage ?? 'sq';
+    const operation = body.operation ?? 'explain';
+    if (!Object.hasOwn(languages, target) || !['translate', 'explain'].includes(operation)) return json({error: 'Unsupported operation or language'}, 400);
+    const instruction = operation === 'translate'
+      ? `Translate into ${languages[target]}. Preserve all meaning, repetitions, terminology and line breaks. Return only the complete translation.`
+      : `Explain the passage clearly in ${languages[target]}. Do not invent citations or facts.`;
     try {
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -54,7 +61,7 @@ export default {
         },
         body: JSON.stringify({
           model: 'gpt-4.1-mini',
-          instructions: path === '/v1/scene-plan' ? 'You are a careful storyboard assistant. Return a concise production plan in standard Albanian with scene motion, camera, lighting, sound, and continuity notes. Do not claim video was generated. Do not invent source images or alter character identities.' : INSTRUCTION,
+          instructions: path === '/v1/scene-plan' ? 'You are a careful storyboard assistant. Return a concise production plan in standard Albanian with scene motion, camera, lighting, sound, and continuity notes. Do not claim video was generated. Do not invent source images or alter character identities.' : instruction,
           input: input,
           max_output_tokens: MAX_OUTPUT_TOKENS,
           store: false,
@@ -63,6 +70,7 @@ export default {
       });
       if (!response.ok) return json({ error: 'AI provider request failed', upstreamStatus: response.status }, 502);
       const data = await response.json();
+      if (data.status === 'incomplete') return json({ error: 'Text output exceeded limit; select a shorter passage' }, 422);
       const output = (data.output || []).flatMap(item => item.content || [])
         .filter(part => part.type === 'output_text').map(part => part.text).join('');
       if (!output) return json({ error: 'AI provider returned no text' }, 502);
