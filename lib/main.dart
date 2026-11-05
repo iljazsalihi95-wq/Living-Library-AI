@@ -612,7 +612,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     }
     if (widget.content.trim().isEmpty) return;
     if (widget.content.length > 4000) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leximi me zë i librave të gjatë kërkon ndarjen në pjesë. Nuk do të dërgohet i gjithë libri te motori TTS.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është i gjatë. Për lexim me zë, zgjidh një pjesë më të shkurtër të tekstit.')));
       return;
     }
     try {
