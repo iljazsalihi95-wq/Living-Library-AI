@@ -115,18 +115,27 @@ class _LibraryHomeState extends State<LibraryHome> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biblioteka e ruajtur ka të dhëna të dëmtuara. Importimi u ndal për të mos fshirë librat ekzistues.')));
         return;
       }
-      library.removeWhere((entry) => entry['title'] == file.name);
-      library.insert(0, {'title': file.name, 'content': content});
+      // Preserve earlier imports with the same filename instead of overwriting them.
+      var uniqueTitle = file.name;
+      var duplicateIndex = 2;
+      final dot = file.name.lastIndexOf('.');
+      final stem = dot > 0 ? file.name.substring(0, dot) : file.name;
+      final suffix = dot > 0 ? file.name.substring(dot) : '';
+      while (library.any((entry) => entry['title'] == uniqueTitle)) {
+        uniqueTitle = '$stem ($duplicateIndex)$suffix';
+        duplicateIndex++;
+      }
+      library.insert(0, {'title': uniqueTitle, 'content': content});
       final saved = await prefs.setString('library_books_v1', jsonEncode(library));
       if (!saved) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ruajtja e librit dështoi. Provo përsëri.')));
         return;
       }
-      await prefs.setString('imported_book_title', file.name);
+      await prefs.setString('imported_book_title', uniqueTitle);
       await prefs.setString('imported_book_text', content);
       if (!mounted) return;
-      setState(() => selectedBook = file.name);
-      await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: file.name, content: content)));
+      setState(() => selectedBook = uniqueTitle);
+      await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: uniqueTitle, content: content)));
       return;
     }
     if (!mounted) return;
