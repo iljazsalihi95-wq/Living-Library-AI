@@ -637,7 +637,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
         if (end >= content.length) {
           end = content.length;
         } else {
-          final boundary = content.lastIndexOf(RegExp(r'[.!?\\n ]'), end);
+          final boundary = content.lastIndexOf(RegExp(r'[.!?\s]'), end);
           if (boundary > offset + 1500) end = boundary + 1;
         }
         await _tts.speak(content.substring(offset, end));
