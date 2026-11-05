@@ -45,8 +45,8 @@ class _LibraryHomeState extends State<LibraryHome> {
     final file = files.single;
     if (file.extension?.toLowerCase() == 'zip') {
       try {
-        if (file.path != null && await File(file.path!).length() > 100 * 1024 * 1024) {
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paketa ZIP tejkalon 100 MB. Importimi u ndal për të mbrojtur memorien e telefonit.')));
+        if (file.path != null && await File(file.path!).length() > 80 * 1024 * 1024) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paketa ZIP tejkalon 80 MiB. Importimi u ndal për të mbrojtur memorien e telefonit.')));
           return;
         }
         final zipBytes = await file.readAsBytes();
