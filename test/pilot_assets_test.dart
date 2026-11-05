@@ -48,6 +48,17 @@ void main() {
   test('rejects malformed JPEG bytes', () {
     expect(() => PilotAssets.decodeFrames(makeArchive(22, corrupt: true)), throwsFormatException);
   });
+  test('accepts the original owner ZIP with README_SHQIP.txt', () {
+    final archive = Archive();
+    final jpeg = <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
+    for (var i = 1; i <= 22; i++) {
+      archive.addFile(ArchiveFile('assets/story/frame_${i.toString().padLeft(2, '0')}.jpg', jpeg.length, jpeg));
+    }
+    final readme = '22 ilustrime'.codeUnits;
+    archive.addFile(ArchiveFile('README_SHQIP.txt', readme.length, readme));
+    expect(PilotAssets.decodeFrames(Uint8List.fromList(ZipEncoder().encode(archive))).length, 22);
+  });
+
   test('rejects unexpected files in the private frame package', () {
     final archive = Archive();
     final jpeg = <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
