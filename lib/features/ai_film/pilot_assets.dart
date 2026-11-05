@@ -106,11 +106,13 @@ class PilotAssets {
     var totalUncompressed = 0;
     final frames = <String, Uint8List>{};
     for (final entry in archive) {
-      if (!entry.isFile) continue;
+      if (!entry.isFile) {
+        throw const FormatException('Dosjet shtesë nuk lejohen në ZIP.');
+      }
       // Reject extra files and unsafe ZIP paths rather than silently skipping them.
       final rawName = entry.name.replaceAll('\\', '/');
       final parts = rawName.split('/');
-      if (rawName.startsWith('/') || parts.contains('..') || parts.contains('.') || parts.contains('') || rawName.contains('\u0000')) {
+      if (rawName.startsWith('/') || parts.contains('..') || parts.contains('.') || parts.contains('') || parts.length != 1 || rawName.contains('\u0000')) {
         throw const FormatException('Rrugë e pasigurt në arkivin ZIP.');
       }
       final name = parts.last;
