@@ -610,35 +610,55 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     _tts.setErrorHandler((_) { if (mounted) setState(() => speaking = false); });
   }
 
+  bool _speechCancelled = false;
+  int _speechSession = 0;
+
   Future<void> _toggleSpeech() async {
     if (speaking) {
+      _speechCancelled = true;
+      _speechSession++;
       await _tts.stop();
       if (mounted) setState(() => speaking = false);
       return;
     }
-    if (widget.content.trim().isEmpty) return;
-    if (widget.content.length > 4000) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është i gjatë. Për lexim me zë, zgjidh një pjesë më të shkurtër të tekstit.')));
-      return;
-    }
+    final content = widget.content.trim();
+    if (content.isEmpty) return;
+    _speechCancelled = false;
+    final session = ++_speechSession;
     try {
       await _tts.setLanguage('sq-AL');
       await _tts.setSpeechRate(speechRate);
-      await _tts.awaitSpeakCompletion(false);
-      final result = await _tts.speak(widget.content);
-      if (mounted) setState(() => speaking = result == 1);
+      await _tts.awaitSpeakCompletion(true);
+      if (!mounted || _speechCancelled) return;
+      setState(() => speaking = true);
+      var offset = 0;
+      while (offset < content.length && !_speechCancelled && session == _speechSession) {
+        var end = offset + 3000;
+        if (end >= content.length) {
+          end = content.length;
+        } else {
+          final boundary = content.lastIndexOf(RegExp(r'[.!?\\n ]'), end);
+          if (boundary > offset + 1500) end = boundary + 1;
+        }
+        await _tts.speak(content.substring(offset, end));
+        offset = end;
+      }
     } catch (_) {
-      if (mounted) {
+      if (mounted && !_speechCancelled) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Zëri shqip nuk është i disponueshëm në motorin TTS të telefonit.'),
+          content: Text('Leximi me zë u ndërpre. Kontrollo motorin TTS dhe zërin shqip.'),
         ));
       }
+    } finally {
+      if (mounted && session == _speechSession) setState(() => speaking = false);
     }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _speechCancelled = true;
+    _speechSession++;
     _tts.stop();
     super.dispose();
   }
