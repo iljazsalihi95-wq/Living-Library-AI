@@ -7,7 +7,7 @@ import 'package:living_library_ai/features/ai_film/pilot_assets.dart';
 Uint8List makeZip({int count = 22, bool corruptLast = false}) {
   final archive = Archive();
   for (var i = 1; i <= count; i++) {
-    final name = 'assets/story/frame_${i.toString().padLeft(2, '0')}.jpg';
+    final name = 'frame_${i.toString().padLeft(2, '0')}.jpg';
     final data = (corruptLast && i == count)
         ? <int>[0xff, 0xd8, 0x01, 0x02]
         : <int>[0xff, 0xd8, 0x01, 0xff, 0xd9];
