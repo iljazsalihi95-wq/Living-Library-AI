@@ -12,6 +12,7 @@ from pathlib import PurePosixPath
 EXPECTED = 22
 MAX_ARCHIVE_BYTES = 80 * 1024 * 1024
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
+MAX_TOTAL_UNCOMPRESSED_BYTES = 80 * 1024 * 1024
 
 
 def verify(path):
@@ -20,11 +21,20 @@ def verify(path):
     with zipfile.ZipFile(path) as archive:
         images = []
         seen = set()
+        total_uncompressed = 0
         for item in archive.infolist():
             name = item.filename.replace("\\", "/")
             parts = PurePosixPath(name).parts
             if item.is_dir():
                 continue
+            # Do not allow hidden extra payloads in a supposedly image-only archive.
+            if not name.lower().endswith((".jpg", ".jpeg")):
+                raise ValueError(f"Unexpected non-image file: {name}")
+            if item.flag_bits & 0x1:
+                raise ValueError("Encrypted ZIP entries are not supported")
+            total_uncompressed += item.file_size
+            if total_uncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES:
+                raise ValueError("Uncompressed ZIP contents exceed 80 MiB")
             if name.startswith("/") or ".." in parts or "\x00" in name:
                 raise ValueError("Unsafe ZIP path")
             if name.lower().endswith((".jpg", ".jpeg")):
