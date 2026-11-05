@@ -33,6 +33,7 @@ with zipfile.ZipFile(apk) as archive:
         with Image.open(frame) as illustration:
             assert illustration.format == 'JPEG', f'Not a JPEG: {frame.name}'
             assert illustration.width >= 64 and illustration.height >= 64, f'Illustration too small: {frame.name}'
+            illustration.load()  # Decode every pixel; JPEG header checks alone miss truncated image data
     bundled_frames = sorted(name for name in names if name.startswith('assets/flutter_assets/assets/story/'))
     expected_frames = sorted('assets/flutter_assets/' + frame.as_posix() for frame in frames)
     assert bundled_frames == expected_frames, 'APK contains missing or unexpected story assets'
