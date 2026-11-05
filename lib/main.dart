@@ -611,6 +611,10 @@ class _TextReaderPageState extends State<_TextReaderPage> {
       return;
     }
     if (widget.content.trim().isEmpty) return;
+    if (widget.content.length > 4000) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leximi me zë i librave të gjatë kërkon ndarjen në pjesë. Nuk do të dërgohet i gjithë libri te motori TTS.')));
+      return;
+    }
     try {
       await _tts.setLanguage('sq-AL');
       await _tts.setSpeechRate(speechRate);
