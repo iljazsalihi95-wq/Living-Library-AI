@@ -7,6 +7,7 @@ import argparse
 import sys
 import re
 import zipfile
+import stat
 from pathlib import PurePosixPath
 
 EXPECTED = 22
@@ -25,6 +26,10 @@ def verify(path):
         for item in archive.infolist():
             name = item.filename.replace("\\", "/")
             parts = PurePosixPath(name).parts
+            # Reject Unix symlinks and special entries even if named .jpg.
+            mode = (item.external_attr >> 16) & 0xFFFF
+            if mode and stat.S_IFMT(mode) not in (0, stat.S_IFREG, stat.S_IFDIR):
+                raise ValueError(f"Unsafe ZIP entry type: {name}")
             if item.is_dir():
                 continue
             # Do not allow hidden extra payloads in a supposedly image-only archive.
