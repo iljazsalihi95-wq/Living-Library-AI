@@ -112,7 +112,7 @@ class PilotAssets {
       // Match the offline ZIP verifier's 12 MiB per-frame limit.
       if (entry.size > 12 * 1024 * 1024) throw const FormatException('Ilustrim tepër i madh (maksimumi 12 MiB).');
       totalUncompressed += entry.size;
-      if (totalUncompressed > 100 * 1024 * 1024) {
+      if (totalUncompressed > 80 * 1024 * 1024) {
         throw const FormatException('Ilustrimet në ZIP janë tepër të mëdha.');
       }
       final data = entry.readBytes();
