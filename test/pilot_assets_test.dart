@@ -41,4 +41,33 @@ void main() {
   test('rejects malformed JPEG bytes', () {
     expect(() => PilotAssets.decodeFrames(makeArchive(22, corrupt: true)), throwsFormatException);
   });
+  test('rejects unexpected files in the private frame package', () {
+    final archive = Archive();
+    final jpeg = <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
+    for (var i = 1; i <= 22; i++) {
+      archive.addFile(ArchiveFile('frame_${i.toString().padLeft(2, '0')}.jpg', jpeg.length, jpeg));
+    }
+    final extra = <int>[1, 2, 3];
+    archive.addFile(ArchiveFile('notes.txt', extra.length, extra));
+    expect(() => PilotAssets.decodeFrames(Uint8List.fromList(ZipEncoder().encode(archive))), throwsFormatException);
+  });
+
+  test('rejects path traversal in a ZIP entry', () {
+    final archive = Archive();
+    final jpeg = <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
+    archive.addFile(ArchiveFile('../frame_01.jpg', jpeg.length, jpeg));
+    expect(() => PilotAssets.decodeFrames(Uint8List.fromList(ZipEncoder().encode(archive))), throwsFormatException);
+  });
+
+  test('rejects a frame exceeding the 12 MiB mobile limit', () {
+    final archive = Archive();
+    final large = Uint8List(12 * 1024 * 1024 + 1);
+    large[0] = 0xff;
+    large[1] = 0xd8;
+    large[large.length - 2] = 0xff;
+    large[large.length - 1] = 0xd9;
+    archive.addFile(ArchiveFile('frame_01.jpg', large.length, large));
+    expect(() => PilotAssets.decodeFrames(Uint8List.fromList(ZipEncoder().encode(archive))), throwsFormatException);
+  });
+
 }
