@@ -5,6 +5,7 @@ Usage: python3 tools/verify_pilot_zip.py /path/to/pilot.zip
 """
 import argparse
 import sys
+import re
 import zipfile
 from pathlib import PurePosixPath
 
@@ -18,6 +19,7 @@ def verify(path):
         raise ValueError("ZIP exceeds 80 MiB")
     with zipfile.ZipFile(path) as archive:
         images = []
+        seen = set()
         for item in archive.infolist():
             name = item.filename.replace("\\", "/")
             parts = PurePosixPath(name).parts
@@ -26,13 +28,20 @@ def verify(path):
             if name.startswith("/") or ".." in parts or "\x00" in name:
                 raise ValueError("Unsafe ZIP path")
             if name.lower().endswith((".jpg", ".jpeg")):
+                basename = PurePosixPath(name).name
+                if not re.fullmatch(r"frame_(0[1-9]|1[0-9]|2[0-2])\.jpg", basename):
+                    raise ValueError(f"Unexpected pilot frame name: {basename}")
+                if basename in seen:
+                    raise ValueError(f"Duplicate pilot frame: {basename}")
+                seen.add(basename)
                 if item.file_size > MAX_IMAGE_BYTES:
                     raise ValueError("JPEG exceeds 12 MiB")
                 images.append(item)
         if len(images) != EXPECTED:
             raise ValueError(f"Expected {EXPECTED} JPEGs; found {len(images)}")
-        if len({i.filename.casefold() for i in images}) != EXPECTED:
-            raise ValueError("Duplicate JPEG filenames")
+        expected = {f"frame_{i:02d}.jpg" for i in range(1, EXPECTED + 1)}
+        if seen != expected:
+            raise ValueError(f"Missing pilot frames: {sorted(expected - seen)}")
         for item in images:
             with archive.open(item) as stream:
                 data = stream.read(MAX_IMAGE_BYTES + 1)
