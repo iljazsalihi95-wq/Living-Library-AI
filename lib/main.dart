@@ -45,6 +45,11 @@ class _LibraryHomeState extends State<LibraryHome> {
     final file = files.single;
     if (file.extension?.toLowerCase() == 'zip') {
       try {
+        final zipSize = file.path == null ? file.size : await File(file.path!).length();
+        if (zipSize > 100 * 1024 * 1024) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paketa ZIP tejkalon 100 MB. Importimi u ndal për të mbrojtur memorien e telefonit.')));
+          return;
+        }
         final imported = await PilotAssets.importZip(zipBytes: await file.readAsBytes());
         // Same filenames are reused after reimport; discard decoded old images.
         imageCache.clear();
