@@ -7,6 +7,7 @@ from PIL import Image, ImageChops
 apk = Path('build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk')
 with zipfile.ZipFile(apk) as archive:
     names = archive.namelist()
+    assert len(names) == len(set(names)), 'Duplicate APK entries are not allowed'
     assert 'lib/arm64-v8a/libflutter.so' in names, 'ARM64 Flutter runtime missing'
     assert not any(name.startswith(('lib/x86', 'lib/armeabi')) for name in names), 'Unexpected non-ARM64 runtime'
     icons = [name for name in names if name.startswith('res/') and name.endswith('/ic_launcher.png')]
@@ -32,6 +33,9 @@ with zipfile.ZipFile(apk) as archive:
         with Image.open(frame) as illustration:
             assert illustration.format == 'JPEG', f'Not a JPEG: {frame.name}'
             assert illustration.width >= 64 and illustration.height >= 64, f'Illustration too small: {frame.name}'
+    bundled_frames = sorted(name for name in names if name.startswith('assets/flutter_assets/assets/story/'))
+    expected_frames = sorted('assets/flutter_assets/' + frame.as_posix() for frame in frames)
+    assert bundled_frames == expected_frames, 'APK contains missing or unexpected story assets'
     for frame in frames:
         name = 'assets/flutter_assets/' + frame.as_posix()
         assert archive.read(name) == frame.read_bytes(), f'Illustration missing/changed: {frame.name}'
