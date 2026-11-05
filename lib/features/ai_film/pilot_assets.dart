@@ -109,7 +109,8 @@ class PilotAssets {
       if (!entry.isFile) continue;
       final name = entry.name.split('/').last;
       if (!RegExp(r'^frame_(0[1-9]|1[0-9]|2[0-2])\.jpg$').hasMatch(name)) continue;
-      if (entry.size > 20 * 1024 * 1024) throw const FormatException('Ilustrim tepër i madh.');
+      // Match the offline ZIP verifier's 12 MiB per-frame limit.
+      if (entry.size > 12 * 1024 * 1024) throw const FormatException('Ilustrim tepër i madh (maksimumi 12 MiB).');
       totalUncompressed += entry.size;
       if (totalUncompressed > 100 * 1024 * 1024) {
         throw const FormatException('Ilustrimet në ZIP janë tepër të mëdha.');
