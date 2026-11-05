@@ -6,7 +6,7 @@ import 'package:living_library_ai/features/ai_film/pilot_assets.dart';
 Uint8List makeArchive(int count, {bool corrupt = false}) {
   final archive = Archive();
   for (var i = 1; i <= count; i++) {
-    final name = 'assets/story/frame_${i.toString().padLeft(2, '0')}.jpg';
+    final name = 'frame_${i.toString().padLeft(2, '0')}.jpg';
     final bytes = corrupt && i == count
         ? <int>[1, 2, 3, 4]
         : <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
@@ -21,6 +21,13 @@ void main() {
     expect(frames.length, 22);
     expect(frames.keys.first, 'frame_01.jpg');
     expect(frames.keys.last, 'frame_22.jpg');
+  });
+
+  test('rejects nested frame paths instead of silently flattening them', () {
+    final archive = Archive();
+    final jpeg = <int>[0xff, 0xd8, 1, 2, 0xff, 0xd9];
+    archive.addFile(ArchiveFile('assets/story/frame_01.jpg', jpeg.length, jpeg));
+    expect(() => PilotAssets.decodeFrames(Uint8List.fromList(ZipEncoder().encode(archive))), throwsFormatException);
   });
 
   test('rejects incomplete storyboard', () {
