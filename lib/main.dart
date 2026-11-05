@@ -67,7 +67,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       return;
     }
     if (['txt', 'md', 'markdown'].contains(file.extension?.toLowerCase())) {
-      if ((file.path != null && File(file.path!).lengthSync() > 10 * 1024 * 1024)) {
+      if (file.path != null && await File(file.path!).length() > 10 * 1024 * 1024) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është mbi 10 MB. Për të mbrojtur bibliotekën lokale, përdor një skedar më të vogël.')));
         return;
       }
