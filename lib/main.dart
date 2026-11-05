@@ -95,7 +95,7 @@ class _LibraryHomeState extends State<LibraryHome> {
             content = pages.join('\n\n');
             if (content.trim().isEmpty) throw const FormatException('PDF-ja nuk ka shtresë teksti. Skanimet kërkojnë OCR, që nuk është konfiguruar.');
           } finally { await document.dispose(); }
-        } else { content = utf8.decode(bytes, allowMalformed: true); }
+        } else { content = utf8.decode(bytes); }
       } catch (error) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Importimi nuk përfundoi: $error')));
         return;
