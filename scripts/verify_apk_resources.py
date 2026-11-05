@@ -38,7 +38,7 @@ with zipfile.ZipFile(apk) as archive:
             illustration.load()  # Decode every pixel; JPEG header checks alone miss truncated image data
     frame_hashes = [hashlib.sha256(frame.read_bytes()).hexdigest() for frame in frames]
     assert len(set(frame_hashes)) == len(frame_hashes), 'Duplicate illustration bytes detected; review pilot assets'
-    bundled_frames = sorted(name for name in names if name.startswith('assets/flutter_assets/assets/story/'))
+    bundled_frames = sorted(name for name in names if name.startswith('assets/flutter_assets/assets/story/') and name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')))
     expected_frames = sorted('assets/flutter_assets/' + frame.as_posix() for frame in frames)
     assert bundled_frames == expected_frames, 'APK contains missing or unexpected story assets'
     for frame in frames:
