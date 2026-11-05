@@ -186,7 +186,7 @@ class _LibraryHomeState extends State<LibraryHome> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.12,
                 children: [
-                  _PremiumAction(title: 'Importo libër', subtitle: selectedBook ?? 'TXT / Markdown / PDF tekstual', icon: Icons.library_books_outlined, onTap: _import),
+                  _PremiumAction(title: 'Importo libër ose ilustrime', subtitle: selectedBook ?? 'TXT • Markdown • PDF tekstual • ZIP ilustrimesh', icon: Icons.library_books_outlined, onTap: _import),
                   _PremiumAction(title: 'Shkruaj librin', subtitle: 'Draft privat në telefon', icon: Icons.edit_note_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _WritingPage()))),
                   _PremiumAction(title: 'Studio e tregimeve', subtitle: 'Skena • narracion • ilustrime', icon: Icons.movie_filter_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const StoryStudio()))),
                   _PremiumAction(title: 'Biblioteka ime', subtitle: 'Rafti personal', icon: Icons.auto_stories_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()))),
