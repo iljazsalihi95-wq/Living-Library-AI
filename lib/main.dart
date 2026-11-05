@@ -50,11 +50,12 @@ class _LibraryHomeState extends State<LibraryHome> {
     final file = files.single;
     if (file.extension?.toLowerCase() == 'zip') {
       try {
-        if (file.size > 80 * 1024 * 1024 || (file.path != null && await File(file.path!).length() > 80 * 1024 * 1024)) {
+        if (file.path != null && await File(file.path!).length() > 80 * 1024 * 1024) {
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paketa ZIP tejkalon 80 MiB. Importimi u ndal për të mbrojtur memorien e telefonit.')));
           return;
         }
         final zipBytes = await file.readAsBytes();
+        if (zipBytes.length > 80 * 1024 * 1024) throw const FormatException('ZIP tejkalon 80 MiB');
         final imported = await PilotAssets.importZip(zipBytes: zipBytes);
         // Same filenames are reused after reimport; discard decoded old images.
         imageCache.clear();
@@ -72,7 +73,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       return;
     }
     if (['txt', 'md', 'markdown', 'pdf'].contains(file.extension?.toLowerCase())) {
-      if (file.size > 10 * 1024 * 1024 || (file.path != null && await File(file.path!).length() > 10 * 1024 * 1024)) {
+      if (file.path != null && await File(file.path!).length() > 10 * 1024 * 1024) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është mbi 10 MB. Për të mbrojtur bibliotekën lokale, përdor një skedar më të vogël.')));
         return;
@@ -80,6 +81,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       String content;
       try {
         final bytes = await file.readAsBytes();
+        if (bytes.length > 10 * 1024 * 1024) throw const FormatException('Libri tejkalon 10 MB');
         if (file.extension?.toLowerCase() == 'pdf') {
           await pdfrxFlutterInitialize();
           final document = await PdfDocument.openData(bytes);
