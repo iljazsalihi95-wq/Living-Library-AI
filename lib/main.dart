@@ -286,40 +286,20 @@ class _PremiumAction extends StatelessWidget {
 class _BookShelf extends StatelessWidget {
   const _BookShelf({required this.onTap});
   final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          height: 150,
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
-          decoration: BoxDecoration(color: const Color(0xFF0B251F), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF285347))),
-          child: Column(children: [
-            Expanded(child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: const [
-              _BookSpine('Tregimi\npilot', 74, Color(0xFF7B392C)), SizedBox(width: 7),
-              _BookSpine('Libri\nim', 92, Color(0xFF275D50)), SizedBox(width: 7),
-              _BookSpine('Shënime', 64, Color(0xFF8B6A31)), SizedBox(width: 7),
-              _BookSpine('AI\nStudio', 82, Color(0xFF3B456D)),
-            ])),
-            Container(height: 9, decoration: BoxDecoration(color: const Color(0xFF6B4728), borderRadius: BorderRadius.circular(3), boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 7, offset: Offset(0, 4))])),
-          ]),
-        ),
-      );
-}
-
-class _BookSpine extends StatelessWidget {
-  const _BookSpine(this.text, this.height, this.color);
-  final String text;
-  final double height;
-  final Color color;
-  @override
-  Widget build(BuildContext context) => Container(width: 49, height: height, padding: const EdgeInsets.all(5), alignment: Alignment.center, decoration: BoxDecoration(color: color, borderRadius: const BorderRadius.vertical(top: Radius.circular(5)), border: Border.all(color: gold.withValues(alpha: .35))), child: Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800)));
+  @override Widget build(BuildContext context) => FutureBuilder<SharedPreferences>(future: SharedPreferences.getInstance(), builder: (context, snapshot) {
+    final books = _safeBooks(snapshot.data?.getString('library_books_v1'));
+    if (books.isEmpty) return Card(child: ListTile(onTap: onTap, leading: const Icon(Icons.library_books_outlined, color: gold), title: const Text('Biblioteka jote'), subtitle: const Text('Importo librin tënd ose shkruaj një draft.')));
+    return Column(children: [for (final book in books.take(3)) BookCard(key: ValueKey(book['title']), title: book['title'] as String, onOpen: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: book['title'] as String, content: book['content'] as String)))), TextButton(onPressed: onTap, child: Text('Shiko bibliotekën • ${books.length} libra'))]);
+  });
 }
 
 class _RecentReading extends StatelessWidget {
   const _RecentReading();
-  @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18)), child: const Row(children: [Icon(Icons.history, color: gold), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vlera e namazit me xhemat', style: TextStyle(fontWeight: FontWeight.w700)), SizedBox(height: 3), Text('Tregimi pilot • 12 skena', style: TextStyle(color: Color(0xFF9DB4AA), fontSize: 12))])), Icon(Icons.chevron_right, color: gold)]));
+  @override Widget build(BuildContext context) => FutureBuilder<SharedPreferences>(future: SharedPreferences.getInstance(), builder: (context, snapshot) {
+    final title = snapshot.data?.getString('reader_last_title');
+    if (title == null) return const Text('Leximet e tua të fundit do të shfaqen këtu.', style: TextStyle(color: Color(0xFF9DB4AA)));
+    return Card(child: ListTile(leading: const Icon(Icons.history, color: gold), title: Text(title), subtitle: const Text('Pozicioni i leximit ruhet në pajisje.'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()))));
+  });
 }
 
 class _PilotStoryPage extends StatefulWidget {
@@ -641,6 +621,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
   }
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('reader_last_title', widget.title);
     final ok = await prefs.setString(storageKey, jsonEncode({'position': current, 'bookmarks': bookmarks, 'notes': notes}));
     if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pozicioni nuk mund të ruhej.')));
   }

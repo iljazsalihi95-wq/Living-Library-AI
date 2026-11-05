@@ -6,9 +6,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BookCard extends StatefulWidget {
-  const BookCard({super.key, required this.title, required this.onOpen, required this.onDelete});
+  const BookCard({super.key, required this.title, required this.onOpen, this.onDelete});
   final String title;
-  final VoidCallback onOpen, onDelete;
+  final VoidCallback onOpen;
+  final VoidCallback? onDelete;
   @override State<BookCard> createState() => _BookCardState();
 }
 class _BookCardState extends State<BookCard> {
@@ -47,6 +48,6 @@ class _BookCardState extends State<BookCard> {
     contentPadding: const EdgeInsets.all(12),
     leading: SizedBox(width: 48, height: 68, child: cover.isEmpty ? Container(decoration: BoxDecoration(color: const Color(0xFF153B30), border: Border.all(color: const Color(0xFFE2BE72)), borderRadius: BorderRadius.circular(6)), child: Center(child: Text(widget.title.substring(0, widget.title.length.clamp(0, 2)).toUpperCase(), style: const TextStyle(color: Color(0xFFE2BE72),fontWeight: FontWeight.bold)))) : Image.file(File(cover), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image))),
     title: Text(widget.title), subtitle: Text('$category • lexim / audio'), onTap: widget.onOpen,
-    trailing: PopupMenuButton<String>(onSelected: (v) { if (v == 'cover') _image(); if (v == 'category') _edit(); if (v == 'delete') widget.onDelete(); }, itemBuilder: (_) => const [PopupMenuItem(value: 'cover', child: Text('Vendos kopertinën')), PopupMenuItem(value: 'category', child: Text('Ndrysho kategorinë')), PopupMenuItem(value: 'delete', child: Text('Fshi librin'))]),
+    trailing: PopupMenuButton<String>(onSelected: (v) { if (v == 'cover') _image(); if (v == 'category') _edit(); if (v == 'delete') widget.onDelete?.call(); }, itemBuilder: (_) => [PopupMenuItem(value: 'cover', child: Text('Vendos kopertinën')), PopupMenuItem(value: 'category', child: Text('Ndrysho kategorinë')), if (widget.onDelete != null) const PopupMenuItem(value: 'delete', child: Text('Fshi librin'))]),
   ));
 }
