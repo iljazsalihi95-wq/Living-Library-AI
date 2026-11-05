@@ -1,13 +1,17 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'features/ai_film/pilot_story.dart';
 import 'features/ai_film/pilot_assets.dart';
 import 'features/ai/ai_connection.dart';
+import 'features/ai_film/story_studio.dart';
+import 'features/library/book_card.dart';
 
 const gold = Color(0xFFE2BE72);
 const emerald = Color(0xFF071B17);
@@ -41,7 +45,7 @@ class _LibraryHomeState extends State<LibraryHome> {
   String? selectedBook;
 
   Future<void> _import() async {
-    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['txt', 'md', 'markdown', 'zip']);
+    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['txt', 'md', 'markdown', 'pdf', 'zip']);
     if (!mounted || files.isEmpty) return;
     final file = files.single;
     if (file.extension?.toLowerCase() == 'zip') {
@@ -67,13 +71,33 @@ class _LibraryHomeState extends State<LibraryHome> {
       }
       return;
     }
-    if (['txt', 'md', 'markdown'].contains(file.extension?.toLowerCase())) {
+    if (['txt', 'md', 'markdown', 'pdf'].contains(file.extension?.toLowerCase())) {
       if (file.path != null && await File(file.path!).length() > 10 * 1024 * 1024) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është mbi 10 MB. Për të mbrojtur bibliotekën lokale, përdor një skedar më të vogël.')));
         return;
       }
-      final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
+      String content;
+      try {
+        final bytes = await file.readAsBytes();
+        if (file.extension?.toLowerCase() == 'pdf') {
+          await pdfrxFlutterInitialize();
+          final document = await PdfDocument.openData(bytes);
+          try {
+            if (document.permissions?.allowsCopying == false) throw const FormatException('PDF-ja nuk lejon nxjerrjen e tekstit.');
+            final pages = <String>[];
+            for (final page in document.pages) {
+              final text = await page.loadText();
+              if (text != null && text.fullText.trim().isNotEmpty) pages.add('## Faqja ${page.pageNumber}\n\n${text.fullText}');
+            }
+            content = pages.join('\n\n');
+            if (content.trim().isEmpty) throw const FormatException('PDF-ja nuk ka shtresë teksti. Skanimet kërkojnë OCR, që nuk është konfiguruar.');
+          } finally { await document.dispose(); }
+        } else { content = utf8.decode(bytes, allowMalformed: true); }
+      } catch (error) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Importimi nuk përfundoi: $error')));
+        return;
+      }
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
       final prefs = await SharedPreferences.getInstance();
       late final List<Map<String, dynamic>> library;
@@ -117,7 +141,7 @@ class _LibraryHomeState extends State<LibraryHome> {
             if (index == 1) {
               Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()));
             } else if (index == 2) {
-              Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()));
+              Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const StoryStudio()));
             } else if (index == 3) {
               showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (sheetContext) => SafeArea(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Profili privat', style: Theme.of(sheetContext).textTheme.headlineSmall), const SizedBox(height: 12), const Text('Aplikacioni është për testim personal. Nuk kërkohet llogari për draftet lokale.'), const SizedBox(height: 18), FilledButton(onPressed: () => Navigator.pop(sheetContext), child: const Text('Mbyll'))]))));
             }
@@ -151,9 +175,9 @@ class _LibraryHomeState extends State<LibraryHome> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.12,
                 children: [
-                  _PremiumAction(title: 'Importo libër', subtitle: selectedBook ?? 'TXT / Markdown • lexim me zë', icon: Icons.library_books_outlined, onTap: _import),
+                  _PremiumAction(title: 'Importo libër', subtitle: selectedBook ?? 'TXT / Markdown / PDF tekstual', icon: Icons.library_books_outlined, onTap: _import),
                   _PremiumAction(title: 'Shkruaj librin', subtitle: 'Draft privat në telefon', icon: Icons.edit_note_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _WritingPage()))),
-                  _PremiumAction(title: 'Film AI', subtitle: 'Storyboard • skena • preview', icon: Icons.movie_filter_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _PilotStoryPage()))),
+                  _PremiumAction(title: 'Studio e tregimeve', subtitle: 'Skena • narracion • ilustrime', icon: Icons.movie_filter_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const StoryStudio()))),
                   _PremiumAction(title: 'Biblioteka ime', subtitle: 'Rafti personal', icon: Icons.auto_stories_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _SavedDraftPage()))),
                 ],
               ),
@@ -433,7 +457,7 @@ class _SceneEditorPage extends StatelessWidget {
   final dynamic scene;
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text('Skena ${index + 1} • ${scene.title}')),
+        appBar: AppBar(title: Text('Skena ${index + 1} • ${scene.title}'), actions: [IconButton(tooltip: 'Redakto skenën', icon: const Icon(Icons.edit), onPressed: () async { final file = await PilotAssets.frame(scene.referenceImagePaths.first); if (!context.mounted) return; await Navigator.push(context, MaterialPageRoute(builder: (_) => StorySceneEditor(storageKey: 'pilot_scene_${scene.id}', scene: {'title': scene.title, 'text': scene.storyText, 'characters': scene.characterIds.join(', '), 'narration': scene.narration, 'motion': scene.motionInstructions, 'image': file?.path ?? ''}))); })]),
         body: ListView(padding: const EdgeInsets.all(18), children: [
           SizedBox(height: 190, child: ListView.separated(
             scrollDirection: Axis.horizontal,
@@ -569,6 +593,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
   List<int> bookmarks = [];
   Map<String, String> notes = {};
   int session = 0;
+  Timer? scrollSave;
   String get storageKey => 'reader_v2_${base64Url.encode(utf8.encode(widget.title))}';
   List<int> get matches => query.trim().isEmpty ? [] : [for (var i = 0; i < paragraphs.length; i++) if (paragraphs[i].toLowerCase().contains(query.toLowerCase())) i];
   @override
@@ -585,6 +610,19 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     }).toList();
     keys = List.generate(paragraphs.length, (_) => GlobalKey());
     _load();
+    scroll.addListener(() {
+      scrollSave?.cancel();
+      scrollSave = Timer(const Duration(milliseconds: 350), () {
+        if (!mounted || speaking) return;
+        for (var i = 0; i < keys.length; i++) {
+          final box = keys[i].currentContext?.findRenderObject();
+          if (box is RenderBox && box.hasSize) {
+            final top = box.localToGlobal(Offset.zero).dy;
+            if (top + box.size.height > 250) { if (current != i) { setState(() => current = i); _save(); } break; }
+          }
+        }
+      });
+    });
     _tts.setProgressHandler((text, start, end, word) { if (mounted && speaking) setState(() { activeWordStart = start; activeWordEnd = end; }); });
     _tts.setErrorHandler((message) { if (mounted) { session++; setState(() => speaking = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Motori TTS nuk mund ta lexojë tekstin. Kontrollo zërat e instaluar.'))); } });
   }
@@ -655,10 +693,11 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     return RichText(text: TextSpan(style: style, children: [TextSpan(text: text.substring(0, start)), TextSpan(text: text.substring(start, end), style: const TextStyle(backgroundColor: gold, color: emerald)), TextSpan(text: text.substring(end))]));
   }
   @override
-  void dispose() { session++; _tts.stop(); search.dispose(); scroll.dispose(); super.dispose(); }
+  void dispose() { scrollSave?.cancel(); session++; _tts.stop(); search.dispose(); scroll.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(widget.title), actions: [
+      IconButton(tooltip: 'Krijo storyboard nga libri', icon: const Icon(Icons.movie_creation_outlined), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => StoryStudio(initialTitle: widget.title, initialText: widget.content)))),
       IconButton(tooltip: 'Madhësia e tekstit', onPressed: () => setState(() => fontSize = fontSize >= 28 ? 16 : fontSize + 2), icon: const Icon(Icons.text_fields)),
       PopupMenuButton<int>(tooltip: 'Kapitujt dhe shënuesit', onSelected: _jump, itemBuilder: (_) => [for (var i = 0; i < paragraphs.length; i++) if (bookmarks.contains(i) || RegExp(r'^#{1,3}\s|^(Kapitulli|Chapter|Kapitel)\b', caseSensitive: false).hasMatch(paragraphs[i])) PopupMenuItem(value: i, child: Text('${bookmarks.contains(i) ? '★ ' : ''}${paragraphs[i].split('\n').first}', maxLines: 2))]),
     ]),
@@ -733,5 +772,5 @@ class _SavedDraftPageState extends State<_SavedDraftPage> {
     });
   }
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Biblioteka ime')), body: loading ? const Center(child: CircularProgressIndicator()) : content.trim().isEmpty && importedText.trim().isEmpty && libraryBooks.isEmpty ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Nuk ka ende draft të ruajtur. Shkruaj librin tënd dhe ruaje.'))) : ListView(padding: const EdgeInsets.all(20), children: [TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Kërko librin', border: OutlineInputBorder()), onChanged: (value) => setState(() => searchQuery = value.trim().toLowerCase())), const SizedBox(height: 12), for (final book in libraryBooks.where((book) => (book['title'] as String? ?? '').toLowerCase().contains(searchQuery))) Card(child: ListTile(leading: const Icon(Icons.menu_book_outlined), title: Text(book['title'] as String? ?? 'Libër'), subtitle: const Text('Libër i ruajtur • lexim me zë'), trailing: IconButton(tooltip: 'Fshi librin', icon: const Icon(Icons.delete_outline), onPressed: () => _deleteBook(book['title'] as String? ?? '')), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: book['title'] as String? ?? 'Libër', content: book['content'] as String? ?? ''))))), if (libraryBooks.isEmpty && importedText.trim().isNotEmpty && importedTitle.toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(importedTitle.isEmpty ? 'Libri i importuar' : importedTitle), subtitle: const Text('TXT/Markdown • ruajtur në telefon'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: importedTitle, content: importedText))))), if (content.trim().isNotEmpty && (title.trim().isEmpty ? 'Libri im' : title).toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(title.trim().isEmpty ? 'Libri im' : title), subtitle: const Text('Draft lokal • lexim'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: title.trim().isEmpty ? 'Libri im' : title, content: content)))))]));
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Biblioteka ime')), body: loading ? const Center(child: CircularProgressIndicator()) : content.trim().isEmpty && importedText.trim().isEmpty && libraryBooks.isEmpty ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Nuk ka ende draft të ruajtur. Shkruaj librin tënd dhe ruaje.'))) : ListView(padding: const EdgeInsets.all(20), children: [TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Kërko librin', border: OutlineInputBorder()), onChanged: (value) => setState(() => searchQuery = value.trim().toLowerCase())), const SizedBox(height: 12), for (final book in libraryBooks.where((book) => (book['title'] as String? ?? '').toLowerCase().contains(searchQuery))) BookCard(key: ValueKey(book['title']), title: book['title'] as String? ?? 'Libër', onDelete: () => _deleteBook(book['title'] as String? ?? ''), onOpen: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: book['title'] as String? ?? 'Libër', content: book['content'] as String? ?? '')))), if (libraryBooks.isEmpty && importedText.trim().isNotEmpty && importedTitle.toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(importedTitle.isEmpty ? 'Libri i importuar' : importedTitle), subtitle: const Text('TXT/Markdown • ruajtur në telefon'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: importedTitle, content: importedText))))), if (content.trim().isNotEmpty && (title.trim().isEmpty ? 'Libri im' : title).toLowerCase().contains(searchQuery)) Card(child: ListTile(title: Text(title.trim().isEmpty ? 'Libri im' : title), subtitle: const Text('Draft lokal • lexim'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => _TextReaderPage(title: title.trim().isEmpty ? 'Libri im' : title, content: content)))))]));
 }
