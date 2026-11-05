@@ -177,3 +177,4 @@ jobs:
           path: |
             build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk
             build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk.sha256
+            build/app/outputs/flutter-apk/app-arm64-v8a-debug.frames.json
