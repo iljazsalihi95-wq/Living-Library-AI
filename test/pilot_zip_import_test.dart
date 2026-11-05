@@ -9,7 +9,7 @@ Uint8List _makeZip({int frameCount = 22, bool duplicate = false}) {
   // Minimal JPEG signatures are sufficient for the importer's byte checks.
   final jpeg = Uint8List.fromList([0xff, 0xd8, 0xff, 0xd9]);
   for (var i = 1; i <= frameCount; i++) {
-    final name = 'assets/story/frame_${i.toString().padLeft(2, '0')}.jpg';
+    final name = 'frame_${i.toString().padLeft(2, '0')}.jpg';
     archive.addFile(ArchiveFile(name, jpeg.length, jpeg));
   }
   if (duplicate) {
@@ -19,7 +19,7 @@ Uint8List _makeZip({int frameCount = 22, bool duplicate = false}) {
 }
 
 void main() {
-  test('imports all 22 ordered illustration names from nested ZIP paths', () {
+  test('imports all 22 ordered illustration names from flat ZIP paths', () {
     final frames = PilotAssets.decodeFrames(_makeZip());
     expect(frames.length, 22);
     for (var i = 1; i <= 22; i++) {
