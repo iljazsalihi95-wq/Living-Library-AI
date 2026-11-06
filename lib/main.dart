@@ -45,7 +45,13 @@ class _LibraryHomeState extends State<LibraryHome> {
   String? selectedBook;
 
   Future<void> _import() async {
-    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['txt', 'md', 'markdown', 'pdf', 'zip']);
+    List<PlatformFile> files;
+    try {
+      files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['txt', 'md', 'markdown', 'pdf', 'zip']);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Zgjedhja e skedarit dështoi. Provo përsëri.')));
+      return;
+    }
     if (!mounted || files.isEmpty) return;
     final file = files.single;
     if (file.extension?.toLowerCase() == 'zip') {
