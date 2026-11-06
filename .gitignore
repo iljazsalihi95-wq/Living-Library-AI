@@ -7,3 +7,17 @@
 
 # Owner-supplied private pilot frames: never push to GitHub
 /assets/story/frame_*.jpg
+
+# Keep local credentials and private imported material out of public GitHub
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.pem
+*.key
+key.properties
+**/google-services.json
+**/GoogleService-Info.plist
+/private/
+/local-imports/
+/user-documents/
