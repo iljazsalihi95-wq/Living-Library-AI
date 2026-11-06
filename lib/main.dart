@@ -594,6 +594,8 @@ class _TextReaderPageState extends State<_TextReaderPage> {
   Map<String, String> notes = {};
   int session = 0;
   Timer? scrollSave;
+  int jumpGeneration = 0;
+  bool jumping = false;
   String get storageKey => 'reader_v2_${base64Url.encode(utf8.encode(widget.title))}';
   List<int> get matches => query.trim().isEmpty ? [] : [for (var i = 0; i < paragraphs.length; i++) if (paragraphs[i].toLowerCase().contains(query.toLowerCase())) i];
   @override
@@ -611,17 +613,20 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     keys = List.generate(paragraphs.length, (_) => GlobalKey());
     _load();
     scroll.addListener(() {
-      scrollSave?.cancel();
-      scrollSave = Timer(const Duration(milliseconds: 350), () {
-        if (!mounted || speaking) return;
-        for (var i = 0; i < keys.length; i++) {
-          final box = keys[i].currentContext?.findRenderObject();
-          if (box is RenderBox && box.hasSize) {
-            final top = box.localToGlobal(Offset.zero).dy;
-            if (top + box.size.height > 250) { if (current != i) { setState(() => current = i); _save(); } break; }
+      if (!mounted || speaking || jumping) return;
+      for (var i = 0; i < keys.length; i++) {
+        final box = keys[i].currentContext?.findRenderObject();
+        if (box is RenderBox && box.hasSize) {
+          final top = box.localToGlobal(Offset.zero).dy;
+          if (top + box.size.height <= 250) continue;
+          if (current != i) {
+            setState(() => current = i);
+            scrollSave?.cancel();
+            scrollSave = Timer(const Duration(milliseconds: 350), _save);
           }
+          break;
         }
-      });
+      }
     });
     _tts.setProgressHandler((text, start, end, word) { if (mounted && speaking) setState(() { activeWordStart = start; activeWordEnd = end; }); });
     _tts.setErrorHandler((message) { if (mounted) { session++; setState(() => speaking = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Motori TTS nuk mund ta lexojë tekstin. Kontrollo zërat e instaluar.'))); } });
@@ -639,17 +644,24 @@ class _TextReaderPageState extends State<_TextReaderPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _jump(current));
     } catch (_) { /* Keep source book available if reader preferences are damaged. */ }
   }
-  Future<void> _save() async {
+  Future<void> _save({bool reportFailure = true}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('reader_last_title', widget.title);
     final ok = await prefs.setString(storageKey, jsonEncode({'position': current, 'bookmarks': bookmarks, 'notes': notes}));
-    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pozicioni nuk mund të ruhej.')));
+    if (!ok && reportFailure && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pozicioni nuk mund të ruhej.')));
   }
   void _jump(int index) {
     if (!mounted || paragraphs.isEmpty) return;
     setState(() => current = index.clamp(0, paragraphs.length - 1));
     final ctx = keys[current].currentContext;
-    if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 200), alignment: .1);
+    if (ctx != null) {
+      final generation = ++jumpGeneration;
+      jumping = true;
+      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 200), alignment: .1)
+          .whenComplete(() {
+        if (generation == jumpGeneration) jumping = false;
+      });
+    }
     _save();
   }
   Future<void> _note() async {
@@ -700,7 +712,17 @@ class _TextReaderPageState extends State<_TextReaderPage> {
     return RichText(text: TextSpan(style: style, children: [TextSpan(text: text.substring(0, start)), TextSpan(text: text.substring(start, end), style: const TextStyle(backgroundColor: gold, color: emerald)), TextSpan(text: text.substring(end))]));
   }
   @override
-  void dispose() { scrollSave?.cancel(); session++; _tts.stop(); search.dispose(); scroll.dispose(); super.dispose(); }
+  void dispose() {
+    if (scrollSave?.isActive ?? false) {
+      scrollSave?.cancel();
+      _save(reportFailure: false);
+    }
+    session++;
+    _tts.stop();
+    search.dispose();
+    scroll.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(widget.title), actions: [
