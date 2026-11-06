@@ -118,7 +118,7 @@ class _LibraryHomeState extends State<LibraryHome> {
                 .where((item) => item['title'] is String && item['content'] is String)
                 .toList()
             : <Map<String, dynamic>>[];
-      } on FormatException {
+      } on Object catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biblioteka e ruajtur ka të dhëna të dëmtuara. Importimi u ndal për të mos fshirë librat ekzistues.')));
         return;
