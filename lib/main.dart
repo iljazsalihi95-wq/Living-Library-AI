@@ -568,10 +568,33 @@ class _WritingPageState extends State<_WritingPage> {
   void initState() { super.initState(); _loadDraft(); }
   Future<void> _loadDraft() async { final prefs = await SharedPreferences.getInstance(); if (!mounted) return; titleController.text = prefs.getString('book_draft_title') ?? ''; textController.text = prefs.getString('book_draft_text') ?? ''; }
   Future<void> _saveDraft() async { final prefs = await SharedPreferences.getInstance(); await prefs.setString('book_draft_title', titleController.text); await prefs.setString('book_draft_text', textController.text); if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Drafti u ruajt në këtë pajisje.'))); }
+  Future<void> _exportDraft({required bool markdown}) async {
+    final title = titleController.text.trim();
+    final body = textController.text;
+    if (body.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Shkruaj tekstin e librit përpara eksportimit.')));
+      return;
+    }
+    final safeName = (title.isEmpty ? 'Libri_im' : title)
+        .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final output = markdown && title.isNotEmpty ? '# $title\n\n$body' : body;
+    try {
+      final result = await FilePicker.saveFile(
+        dialogTitle: 'Eksporto librin',
+        fileName: '$safeName.${markdown ? 'md' : 'txt'}',
+        bytes: utf8.encode(output),
+      );
+      if (mounted && result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri u eksportua.')));
+      }
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eksportimi dështoi. Drafti mbetet në editor.')));
+    }
+  }
   @override
   void dispose() { titleController.dispose(); textController.dispose(); super.dispose(); }
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Shkruaj librin tim')), body: Padding(padding: const EdgeInsets.all(20), child: Column(children: [TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Titulli', border: OutlineInputBorder())), const SizedBox(height: 14), Expanded(child: TextField(controller: textController, expands: true, maxLines: null, minLines: null, textAlignVertical: TextAlignVertical.top, decoration: const InputDecoration(labelText: 'Teksti i librit', alignLabelWithHint: true, border: OutlineInputBorder()))), const SizedBox(height: 12), SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _saveDraft, icon: const Icon(Icons.save_outlined), label: const Text('Ruaj draftin')))])));
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Shkruaj librin tim'), actions: [PopupMenuButton<bool>(tooltip: 'Eksporto librin', onSelected: (markdown) => _exportDraft(markdown: markdown), itemBuilder: (_) => const [PopupMenuItem(value: false, child: Text('Eksporto TXT')), PopupMenuItem(value: true, child: Text('Eksporto Markdown'))])]), body: Padding(padding: const EdgeInsets.all(20), child: Column(children: [TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Titulli', border: OutlineInputBorder())), const SizedBox(height: 14), Expanded(child: TextField(controller: textController, expands: true, maxLines: null, minLines: null, textAlignVertical: TextAlignVertical.top, decoration: const InputDecoration(labelText: 'Teksti i librit', alignLabelWithHint: true, border: OutlineInputBorder()))), const SizedBox(height: 12), SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _saveDraft, icon: const Icon(Icons.save_outlined), label: const Text('Ruaj draftin')))])));
 }
 
 class _TextReaderPage extends StatefulWidget {
