@@ -103,7 +103,7 @@ class _LibraryHomeState extends State<LibraryHome> {
           } finally { await document.dispose(); }
         } else { content = utf8.decode(bytes); }
       } catch (error) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Importimi nuk përfundoi: $error')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Importimi nuk përfundoi. Kontrollo formatin dhe madhësinë e skedarit.')));
         return;
       }
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
