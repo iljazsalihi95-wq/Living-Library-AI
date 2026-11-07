@@ -16,7 +16,10 @@ class PilotAssets {
     var count = 0;
     for (var i = 1; i <= 22; i++) {
       final file = File('${dir.path}/frame_${i.toString().padLeft(2, '0')}.jpg');
-      if (await frame('assets/story/${file.uri.pathSegments.last}') != null) count++;
+      // Count only privately imported frames. Calling frame() here would
+      // silently copy bundled reference artwork and incorrectly report 22/22
+      // owner originals even when no private pilot has been installed.
+      if (await _isCompleteJpeg(file)) count++;
     }
     return count;
   }
