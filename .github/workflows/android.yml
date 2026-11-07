@@ -93,7 +93,19 @@ jobs:
           for frame in frames:
               with Image.open(frame) as im:
                   im.verify()
-          print(f'Validated {len(frames)} existing pilot images')
+          # Valid JPEG files are not proof that these are the owner's approved photographs.
+          suspicious = []
+          for frame in frames:
+              with Image.open(frame) as im:
+                  width, height = im.size
+              size = frame.stat().st_size
+              if size < 15_000 or min(width, height) < 480:
+                  suspicious.append(f'{frame.name}: {size} bytes, {width}x{height}')
+          if suspicious:
+              print('::warning::Pilot frames need owner-original verification; small/low-resolution assets are not accepted as proof of 22 real photographs.')
+              for item in suspicious:
+                  print(f'::warning::{item}')
+          print(f'Validated JPEG structure for {len(frames)} pilot images; authenticity NOT verified')
           PY
       - name: Test private pilot packaging without owner photographs
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
