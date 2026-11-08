@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -30,12 +29,9 @@ class PilotAssets {
     final dir = await _directory;
     final file = File('${dir.path}/$name');
     if (await _isCompleteJpeg(file)) return file;
-    try {
-      final bytes = await rootBundle.load('assets/story/$name');
-      await dir.create(recursive: true);
-      await file.writeAsBytes(bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes), flush: true);
-      return await _isCompleteJpeg(file) ? file : null;
-    } catch (_) { return null; }
+    // Bundled references are not the owner's imported originals.
+    // Never copy placeholders to private storage and inflate installedCount().
+    return null;
   }
 
   /// Detects truncated files in persistent storage, not just JPEG headers.
