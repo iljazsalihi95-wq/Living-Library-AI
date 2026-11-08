@@ -40,7 +40,7 @@ def verify(path):
             total_uncompressed += item.file_size
             if total_uncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES:
                 raise ValueError("Uncompressed ZIP contents exceed 80 MiB")
-            if name.startswith("/") or ".." in parts or "\x00" in name:
+            if name.startswith("/") or ".." in parts or "\x00" in name or len(parts) != 1:
                 raise ValueError("Unsafe ZIP path")
             if name.lower().endswith((".jpg", ".jpeg")):
                 basename = PurePosixPath(name).name
