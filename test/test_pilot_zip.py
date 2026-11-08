@@ -54,6 +54,13 @@ class PilotZipTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unexpected pilot frame name"):
             module.verify(self.path)
 
+    def test_nested_frame_path_rejected(self):
+        with zipfile.ZipFile(self.path, "w") as archive:
+            for i in range(1, 23):
+                archive.writestr(f"private/frame_{i:02d}.jpg", JPEG)
+        with self.assertRaisesRegex(ValueError, "Unsafe ZIP path"):
+            module.verify(self.path)
+
     def test_zip_traversal(self):
         with zipfile.ZipFile(self.path, "w") as archive:
             archive.writestr("../frame_01.jpg", JPEG)
