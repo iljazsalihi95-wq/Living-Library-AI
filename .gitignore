@@ -7,6 +7,12 @@
 
 # Owner-supplied private pilot frames: never push to GitHub
 /assets/story/frame_*.jpg
+/assets/story/frame_*.jpeg
+/assets/story/frame_*.png
+/assets/story/frame_*.webp
+/assets/story/*.zip
+/assets/story/*.7z
+/assets/story/*.rar
 
 # Keep local credentials and private imported material out of public GitHub
 .env.*
