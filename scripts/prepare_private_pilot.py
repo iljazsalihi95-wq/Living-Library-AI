@@ -9,6 +9,7 @@ Run from repository root:
 Never commit assets/story/frame_*.jpg or the modified pubspec.yaml.
 """
 import hashlib
+import stat
 import re
 import sys
 import zipfile
@@ -28,8 +29,14 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
                 continue
             # Never accept ambiguous archive paths or encrypted image entries.
             parts = info.filename.replace("\\", "/").split("/")
-            if info.filename.startswith(("/", "\\")) or any(part in ("", ".", "..") for part in parts):
+            if (info.filename.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", info.filename)
+                    or any(part in ("", ".", "..") for part in parts)):
+
                 raise ValueError(f"Unsafe pilot archive path: {info.filename}")
+            # ZIP entries can masquerade as images while carrying Unix symlink metadata.
+            mode = (info.external_attr >> 16) & 0xFFFF
+            if stat.S_IFMT(mode) == stat.S_IFLNK:
+                raise ValueError(f"Symlink pilot frame is not supported: {name}")
             if info.flag_bits & 0x1:
                 raise ValueError(f"Encrypted pilot frame is not supported: {name}")
             if info.is_dir() or info.file_size == 0:
