@@ -21,12 +21,18 @@ PATTERN = re.compile(r"frame_(0[1-9]|1[0-9]|2[0-2])\.jpg")
 def prepare(zip_path: Path, check_only: bool = False) -> int:
     with zipfile.ZipFile(zip_path) as archive:
         frames = {}
+        total_uncompressed = 0
         for info in archive.infolist():
             name = Path(info.filename).name
             if not PATTERN.fullmatch(name):
                 continue
             if name in frames or info.file_size > 20 * 1024 * 1024:
                 raise ValueError(f"Duplicate or oversized frame: {name}")
+            total_uncompressed += info.file_size
+            if total_uncompressed > 22 * 20 * 1024 * 1024:
+                raise ValueError("Pilot archive exceeds the allowed image size budget")
+            if info.compress_size == 0 or info.file_size > 200 * info.compress_size:
+                raise ValueError("Suspicious JPEG compression ratio")
             data = archive.read(info)
             if len(data) < 4 or data[:2] != b"\xff\xd8" or data[-2:] != b"\xff\xd9":
                 raise ValueError(f"Invalid JPEG: {name}")
