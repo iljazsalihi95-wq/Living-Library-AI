@@ -35,7 +35,7 @@ class PrivatePilotTest(unittest.TestCase):
             archive = root / "frames.zip"
             with zipfile.ZipFile(archive, "w") as z:
                 for i in range(1, 23):
-                    z.writestr(f"frame_{i:02d}.jpg", b"\\xff\\xd8" + str(i).encode() + b"\\xff\\xd9")
+                    z.writestr(f"frame_{i:02d}.jpg", b"\xff\xd8" + str(i).encode() + b"\xff\xd9")
             with patch.object(pilot, "ROOT", root):
                 self.assertEqual(pilot.prepare(archive, check_only=True), 22)
             self.assertEqual(manifest.read_text(), original)
