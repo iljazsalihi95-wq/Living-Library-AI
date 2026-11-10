@@ -8,6 +8,9 @@ import sys
 import re
 import zipfile
 import stat
+import io
+import hashlib
+from PIL import Image, UnidentifiedImageError
 from pathlib import PurePosixPath
 
 EXPECTED = 22
@@ -57,11 +60,23 @@ def verify(path):
         expected = {f"frame_{i:02d}.jpg" for i in range(1, EXPECTED + 1)}
         if seen != expected:
             raise ValueError(f"Missing pilot frames: {sorted(expected - seen)}")
+        hashes = set()
         for item in images:
             with archive.open(item) as stream:
                 data = stream.read(MAX_IMAGE_BYTES + 1)
             if len(data) != item.file_size or not data.startswith(b"\xff\xd8") or not data.endswith(b"\xff\xd9"):
                 raise ValueError(f"Invalid or truncated JPEG: {item.filename}")
+            try:
+                with Image.open(io.BytesIO(data)) as picture:
+                    if picture.format != 'JPEG' or min(picture.size) < 480:
+                        raise ValueError(f"Invalid JPEG format or low resolution: {item.filename}")
+                    picture.load()  # Decode all pixels, not just JPEG header/footer.
+            except (OSError, UnidentifiedImageError) as exc:
+                raise ValueError(f"Invalid or truncated JPEG: {item.filename}") from exc
+            digest = hashlib.sha256(data).hexdigest()
+            if digest in hashes:
+                raise ValueError(f"Duplicate JPEG contents: {item.filename}")
+            hashes.add(digest)
     return len(images)
 
 
