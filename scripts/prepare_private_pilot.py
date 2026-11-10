@@ -2,6 +2,7 @@
 """Prepare a private, locally bundled pilot build without committing owner's photos.
 
 Run from repository root:
+    python3 scripts/prepare_private_pilot.py /path/to/Living_Library_22_Fotografite_Assets.zip --check-only
     python3 scripts/prepare_private_pilot.py /path/to/Living_Library_22_Fotografite_Assets.zip
     flutter pub get && flutter build apk --debug --split-per-abi
 
@@ -17,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PATTERN = re.compile(r"frame_(0[1-9]|1[0-9]|2[0-2])\.jpg")
 
 
-def prepare(zip_path: Path) -> int:
+def prepare(zip_path: Path, check_only: bool = False) -> int:
     with zipfile.ZipFile(zip_path) as archive:
         frames = {}
         for info in archive.infolist():
@@ -36,6 +37,9 @@ def prepare(zip_path: Path) -> int:
     hashes = [hashlib.sha256(data).digest() for data in frames.values()]
     if len(set(hashes)) != 22:
         raise ValueError("Pilot contains duplicate JPEG content; 22 distinct frames required")
+    if check_only:
+        print("Private archive verified: 22 distinct JPEGs. No files were written.")
+        return 22
     # Validate the Flutter manifest before touching any private photo files.
     pubspec = ROOT / "pubspec.yaml"
     original = pubspec.read_text(encoding="utf-8")
@@ -55,6 +59,6 @@ def prepare(zip_path: Path) -> int:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: python3 scripts/prepare_private_pilot.py PRIVATE_FRAMES.zip")
-    prepare(Path(sys.argv[1]))
+    if len(sys.argv) not in (2, 3) or (len(sys.argv) == 3 and sys.argv[2] != "--check-only"):
+        raise SystemExit("Usage: python3 scripts/prepare_private_pilot.py PRIVATE_FRAMES.zip [--check-only]")
+    prepare(Path(sys.argv[1]), check_only=len(sys.argv) == 3)
