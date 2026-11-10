@@ -26,6 +26,21 @@ class PrivatePilotTest(unittest.TestCase):
                 self.assertEqual(len(list((root / "assets/story").glob("*.jpg"))), 22)
                 self.assertIn("    - assets/story/", (root / "pubspec.yaml").read_text())
 
+    def test_check_only_does_not_write_private_files_or_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "pubspec.yaml"
+            original = "flutter:\n  uses-material-design: true\n"
+            manifest.write_text(original)
+            archive = root / "frames.zip"
+            with zipfile.ZipFile(archive, "w") as z:
+                for i in range(1, 23):
+                    z.writestr(f"frame_{i:02d}.jpg", b"\\xff\\xd8" + str(i).encode() + b"\\xff\\xd9")
+            with patch.object(pilot, "ROOT", root):
+                self.assertEqual(pilot.prepare(archive, check_only=True), 22)
+            self.assertEqual(manifest.read_text(), original)
+            self.assertFalse((root / "assets").exists())
+
     def test_duplicate_photos_rejected_without_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
