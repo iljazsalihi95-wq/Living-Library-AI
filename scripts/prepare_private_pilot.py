@@ -7,7 +7,7 @@ Run from repository root:
 
 Never commit assets/story/frame_*.jpg or the modified pubspec.yaml.
 """
-import io
+import hashlib
 import re
 import sys
 import zipfile
@@ -32,6 +32,10 @@ def prepare(zip_path: Path) -> int:
             frames[name] = data
     if len(frames) != 22:
         raise ValueError(f"Expected 22 frames, found {len(frames)}")
+    # Detect accidental reuse of the same photograph under different frame names.
+    hashes = [hashlib.sha256(data).digest() for data in frames.values()]
+    if len(set(hashes)) != 22:
+        raise ValueError("Pilot contains duplicate JPEG content; 22 distinct frames required")
     target = ROOT / "assets" / "story"
     target.mkdir(parents=True, exist_ok=True)
     for name, data in sorted(frames.items()):
