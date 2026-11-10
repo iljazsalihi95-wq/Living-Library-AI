@@ -36,10 +36,7 @@ def prepare(zip_path: Path) -> int:
     hashes = [hashlib.sha256(data).digest() for data in frames.values()]
     if len(set(hashes)) != 22:
         raise ValueError("Pilot contains duplicate JPEG content; 22 distinct frames required")
-    target = ROOT / "assets" / "story"
-    target.mkdir(parents=True, exist_ok=True)
-    for name, data in sorted(frames.items()):
-        (target / name).write_bytes(data)
+    # Validate the Flutter manifest before touching any private photo files.
     pubspec = ROOT / "pubspec.yaml"
     original = pubspec.read_text(encoding="utf-8")
     if "    - assets/story/" not in original:
@@ -49,6 +46,10 @@ def prepare(zip_path: Path) -> int:
             "flutter:\n  uses-material-design: true",
             "flutter:\n  uses-material-design: true\n  assets:\n    - assets/story/",
         ), encoding="utf-8")
+    target = ROOT / "assets" / "story"
+    target.mkdir(parents=True, exist_ok=True)
+    for name, data in sorted(frames.items()):
+        (target / name).write_bytes(data)
     print("Private bundle ready: 22 JPEGs. Do not commit photos or pubspec.yaml.")
     return 22
 
