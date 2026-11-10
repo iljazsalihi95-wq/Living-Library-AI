@@ -26,6 +26,14 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
             name = Path(info.filename).name
             if not PATTERN.fullmatch(name):
                 continue
+            # Never accept ambiguous archive paths or encrypted image entries.
+            parts = info.filename.replace("\\", "/").split("/")
+            if info.filename.startswith(("/", "\\")) or any(part in ("", ".", "..") for part in parts):
+                raise ValueError(f"Unsafe pilot archive path: {info.filename}")
+            if info.flag_bits & 0x1:
+                raise ValueError(f"Encrypted pilot frame is not supported: {name}")
+            if info.is_dir() or info.file_size == 0:
+                raise ValueError(f"Empty or invalid pilot frame: {name}")
             if name in frames or info.file_size > 20 * 1024 * 1024:
                 raise ValueError(f"Duplicate or oversized frame: {name}")
             total_uncompressed += info.file_size
