@@ -33,6 +33,13 @@ jobs:
                   or lower.endswith(('.jks', '.keystore', '.p12', '.pfx', '.pem', '.key'))
                   or lower.startswith(('id_rsa', 'id_ed25519'))):
                   blocked.append(name)
+          # Public CI must never package the owner's private 22-photo pilot.
+          # .gitignore alone does not protect files that were force-added or tracked earlier.
+          private_frames = [name for name in tracked if name and
+              (name.replace('\\\\', '/').startswith('assets/story/frame_') and
+               name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')))]
+          if private_frames:
+              raise SystemExit(f'{len(private_frames)} private pilot frame(s) tracked in public repository; remove them from Git history before building')
           if blocked:
               raise SystemExit(f'{len(blocked)} potentially private credential file(s) tracked; remove and rotate any exposed secrets before building')
           print('No known private credential file types tracked in source')
