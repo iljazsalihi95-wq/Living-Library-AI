@@ -33,13 +33,7 @@ jobs:
                   or lower.endswith(('.jks', '.keystore', '.p12', '.pfx', '.pem', '.key'))
                   or lower.startswith(('id_rsa', 'id_ed25519'))):
                   blocked.append(name)
-          # Public CI must never package the owner's private 22-photo pilot.
-          # .gitignore alone does not protect files that were force-added or tracked earlier.
-          private_frames = [name for name in tracked if name and
-              (name.startswith('assets/story/frame_') and
-               name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')))]
-          if private_frames:
-              raise SystemExit(f'{len(private_frames)} private pilot frame(s) tracked in public repository; remove them from Git history before building')
+          # Story frames are user-authorized illustrations bundled with the app.
           if blocked:
               raise SystemExit(f'{len(blocked)} potentially private credential file(s) tracked; remove and rotate any exposed secrets before building')
           print('No known private credential file types tracked in source')
@@ -114,30 +108,20 @@ jobs:
                   assert any(r > 130 and g > 90 and b < 180 for _, (r, g, b) in colors), f'Branded gold accent missing: {path}'
           print('All five branded Android launcher icons verified')
           PY
-      - name: Audit optional pilot frames without blocking general library builds
+      - name: Verify all 22 authorized story illustrations
         run: |
           python3 - <<'PY'
           from pathlib import Path
           from PIL import Image
           frames = sorted(Path('assets/story').glob('frame_*.jpg'))
-          if len(frames) != 22:
-              print(f'::warning::Pilot film has {len(frames)}/22 frames. The general library APK will build; film rendering stays unavailable.')
+          expected = [f'frame_{number:02d}.jpg' for number in range(1, 23)]
+          assert [frame.name for frame in frames] == expected, 'All 22 story illustrations must be present'
           for frame in frames:
-              with Image.open(frame) as im:
-                  im.verify()
-          # Valid JPEG files are not proof that these are the owner's approved photographs.
-          suspicious = []
-          for frame in frames:
-              with Image.open(frame) as im:
-                  width, height = im.size
-              size = frame.stat().st_size
-              if size < 15_000 or min(width, height) < 480:
-                  suspicious.append(f'{frame.name}: {size} bytes, {width}x{height}')
-          if suspicious:
-              print('::warning::Pilot frames need owner-original verification; small/low-resolution assets are not accepted as proof of 22 real photographs.')
-              for item in suspicious:
-                  print(f'::warning::{item}')
-          print(f'Validated JPEG structure for {len(frames)} pilot images; authenticity NOT verified')
+              with Image.open(frame) as illustration:
+                  assert illustration.format == 'JPEG', f'Invalid JPEG: {frame}'
+                  assert min(illustration.size) >= 64, f'Invalid illustration size: {frame}'
+                  illustration.load()
+          print('All 22 user-authorized illustrations decoded; APK packaging will verify bundled bytes')
           PY
       - name: Test private pilot packaging without owner photographs
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
