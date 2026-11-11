@@ -262,7 +262,7 @@ class _PilotHero extends StatelessWidget {
             Text('12 skena • 2 personazhe • storyboard pa video', style: TextStyle(color: Color(0xFFC0D2CA))),
             SizedBox(height: 18),
             Row(children: [
-              _MiniPill('Lexo tregimin'), SizedBox(width: 8), _MiniPill('Shiko skenat'), SizedBox(width: 8), _MiniPill('Importo ilustrimet'),
+              _MiniPill('Lexo tregimin'), SizedBox(width: 8), _MiniPill('Shiko skenat'), SizedBox(width: 8), _MiniPill('22 ilustrime'),
             ]),
           ]),
         ),
@@ -402,12 +402,12 @@ class _PilotImportControlState extends State<_PilotImportControl> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Ilustrimet e tregimit: $count/22', style: const TextStyle(fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        const Text('Importo paketën ZIP me ilustrimet e tregimit. Skedarët ruhen vetëm në këtë pajisje.'),
+        const Text('22 ilustrimet janë të përfshira në aplikacion. Mund t’i zëvendësosh me një paketë ZIP.'),
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: busy ? null : _import,
           icon: const Icon(Icons.folder_zip_outlined),
-          label: Text(busy ? 'Duke importuar...' : 'Importo 22 ilustrimet'),
+          label: Text(busy ? 'Duke importuar...' : 'Zëvendëso ilustrimet me ZIP'),
         ),
       ]),
     ),
