@@ -2,9 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// Keeps the owner's storyboard private in app-specific storage.
+/// Loads bundled story illustrations; imported replacements take precedence.
 class PilotAssets {
   static Future<Directory> get _directory async {
     final root = await getApplicationDocumentsDirectory();
@@ -12,14 +13,9 @@ class PilotAssets {
   }
 
   static Future<int> installedCount() async {
-    final dir = await _directory;
     var count = 0;
     for (var i = 1; i <= 22; i++) {
-      final file = File('${dir.path}/frame_${i.toString().padLeft(2, '0')}.jpg');
-      // Count only privately imported frames. Calling frame() here would
-      // silently copy bundled reference artwork and incorrectly report 22/22
-      // owner originals even when no private pilot has been installed.
-      if (await _isCompleteJpeg(file)) count++;
+      if (await frame('assets/story/frame_${i.toString().padLeft(2, '0')}.jpg') != null) count++;
     }
     return count;
   }
@@ -30,9 +26,16 @@ class PilotAssets {
     final dir = await _directory;
     final file = File('${dir.path}/$name');
     if (await _isCompleteJpeg(file)) return file;
-    // Bundled references are not the owner's imported originals.
-    // Never copy placeholders to private storage and inflate installedCount().
-    return null;
+    // The owner authorized these bundled drawings for immediate use.
+    try {
+      final data = await rootBundle.load('assets/story/$name');
+      final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      await dir.create(recursive: true);
+      await file.writeAsBytes(bytes, flush: true);
+      return await _isCompleteJpeg(file) ? file : null;
+    } on FlutterError {
+      return null;
+    }
   }
 
   /// Detects truncated files in persistent storage, not just JPEG headers.
