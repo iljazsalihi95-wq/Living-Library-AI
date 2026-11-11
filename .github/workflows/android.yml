@@ -36,7 +36,7 @@ jobs:
           # Public CI must never package the owner's private 22-photo pilot.
           # .gitignore alone does not protect files that were force-added or tracked earlier.
           private_frames = [name for name in tracked if name and
-              (name.replace('\\\\', '/').startswith('assets/story/frame_') and
+              (name.startswith('assets/story/frame_') and
                name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')))]
           if private_frames:
               raise SystemExit(f'{len(private_frames)} private pilot frame(s) tracked in public repository; remove them from Git history before building')
