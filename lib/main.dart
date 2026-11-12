@@ -102,8 +102,11 @@ class _LibraryHomeState extends State<LibraryHome> {
             if (content.trim().isEmpty) throw const FormatException('PDF-ja nuk ka shtresë teksti. Skanimet kërkojnë OCR, që nuk është konfiguruar.');
           } finally { await document.dispose(); }
         } else { content = utf8.decode(bytes); }
-      } catch (error) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Importimi nuk përfundoi. Kontrollo formatin dhe madhësinë e skedarit.')));
+      } on FormatException catch (error) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+        return;
+      } catch (_) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Importimi nuk përfundoi. Kontrollo formatin dhe madhësinë e skedarit.')));
         return;
       }
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
