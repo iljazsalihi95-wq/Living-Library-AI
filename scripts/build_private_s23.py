@@ -60,7 +60,7 @@ def build(zip_path):
     run("flutter", "pub", "get")
     run("flutter", "analyze")
     run("flutter", "test")
-    run("flutter", "build", "apk", "--debug", "--split-per-abi")
+    run("flutter", "build", "apk", "--debug", "--target-platform", "android-arm64", "--split-per-abi")
     return verify_apk()
 
 
