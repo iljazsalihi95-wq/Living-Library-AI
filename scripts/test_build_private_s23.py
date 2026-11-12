@@ -15,18 +15,25 @@ class PrivateApkVerificationTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.original_apk = module.APK
-        module.APK = Path(self.tmp.name) / "pilot.apk"
+        self.original_root = module.ROOT
+        module.ROOT = Path(self.tmp.name)
+        module.APK = module.ROOT / "pilot.apk"
+        source = module.ROOT / "assets" / "story"
+        source.mkdir(parents=True)
+        for name in module.EXPECTED:
+            (source / name).write_bytes(b"\xff\xd8synthetic\xff\xd9")
 
     def tearDown(self):
         module.APK = self.original_apk
+        module.ROOT = self.original_root
         self.tmp.cleanup()
 
-    def make_apk(self, frames=22, arm64=True):
+    def make_apk(self, frames=22, arm64=True, changed_frame=None):
         with zipfile.ZipFile(module.APK, "w") as archive:
             for number in range(1, frames + 1):
                 archive.writestr(
                     f"assets/flutter_assets/assets/story/frame_{number:02d}.jpg",
-                    b"\xff\xd8synthetic\xff\xd9",
+                    b"\xff\xd8changed\xff\xd9" if number == changed_frame else b"\xff\xd8synthetic\xff\xd9",
                 )
             if arm64:
                 archive.writestr("lib/arm64-v8a/libflutter.so", b"synthetic")
@@ -38,6 +45,11 @@ class PrivateApkVerificationTests(unittest.TestCase):
     def test_missing_photo_fails(self):
         self.make_apk(frames=21)
         with self.assertRaisesRegex(RuntimeError, "missing 1 pilot images"):
+            module.verify_apk()
+
+    def test_changed_photo_fails(self):
+        self.make_apk(changed_frame=1)
+        with self.assertRaisesRegex(RuntimeError, "differs from local source: frame_01.jpg"):
             module.verify_apk()
 
     def test_missing_arm64_runtime_fails(self):
