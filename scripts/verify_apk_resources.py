@@ -48,8 +48,9 @@ with zipfile.ZipFile(apk) as archive:
     assert found == set(expected), 'APK launcher densities do not match generated artwork'
     frames = sorted(Path('assets/story').glob('frame_*.jpg'))
     expected_names = [f'frame_{number:02d}.jpg' for number in range(1, 23)]
-    if frames and [frame.name for frame in frames] != expected_names:
-        print(f'::warning::Pilot illustrations incomplete ({len(frames)}/22); validating only available frames')
+    assert [frame.name for frame in frames] == expected_names, (
+        f'Pilot illustrations incomplete or incorrectly named ({len(frames)}/22); refusing APK verification'
+    )
     for frame in frames:
         with Image.open(frame) as illustration:
             illustration.verify()
