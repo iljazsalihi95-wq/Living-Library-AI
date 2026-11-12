@@ -130,6 +130,8 @@ jobs:
           PY
       - name: Test private pilot packaging without owner photographs
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Test private S23 import and APK verification (synthetic fixtures only)
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
       - name: Test 22-frame ZIP validation without private photographs
         run: python3 -m unittest discover -s test -p 'test_pilot_zip.py'
       - name: Reject generic Android launcher and verify branded artwork
