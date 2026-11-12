@@ -31,6 +31,15 @@ def verify_apk():
         ]
         if missing:
             raise RuntimeError(f"Private APK missing {len(missing)} pilot images: {missing}")
+        # Verify bundled bytes against the owner's locally supplied images, not
+        # merely the presence of 22 filenames (which may be old placeholders).
+        for name in EXPECTED:
+            local = ROOT / "assets" / "story" / name
+            if not local.is_file():
+                raise RuntimeError(f"Missing local pilot source: {name}")
+            bundled = package.read(f"assets/flutter_assets/assets/story/{name}")
+            if hashlib.sha256(bundled).digest() != hashlib.sha256(local.read_bytes()).digest():
+                raise RuntimeError(f"APK pilot image differs from local source: {name}")
         if "lib/arm64-v8a/libflutter.so" not in names:
             raise RuntimeError("APK has no arm64 Flutter runtime")
         if package.testzip() is not None:
