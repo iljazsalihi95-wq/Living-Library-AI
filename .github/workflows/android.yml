@@ -128,6 +128,8 @@ jobs:
                   illustration.load()
           print('All 22 user-authorized illustrations decoded; APK packaging will verify bundled bytes')
           PY
+      - name: Run private ZIP regression tests (synthetic JPEG fixtures only)
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Test private pilot packaging without owner photographs
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Test private S23 import and APK verification (synthetic fixtures only)
