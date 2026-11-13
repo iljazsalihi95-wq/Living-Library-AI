@@ -65,9 +65,28 @@ def verify_apk():
     return checksum
 
 
+def ensure_private_frames_untracked():
+    """Refuse builds from a checkout that tracks the owner's private photos."""
+    tracked = subprocess.run(
+        ["git", "ls-files", "--", "assets/story/"],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    ).stdout.splitlines()
+    private = [
+        path for path in tracked
+        if Path(path).name.lower().startswith("frame_")
+        and Path(path).suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
+    ]
+    if private:
+        raise RuntimeError(
+            "Private pilot frames are tracked by Git; remove them from the "
+            "Git index before building. No images were uploaded."
+        )
+
+
 def build(zip_path):
     if not zip_path.is_file():
         raise FileNotFoundError(zip_path)
+    ensure_private_frames_untracked()
     # Import the validated private asset preparation script.
     sys.path.insert(0, str(ROOT / "scripts"))
     from prepare_private_pilot import prepare
