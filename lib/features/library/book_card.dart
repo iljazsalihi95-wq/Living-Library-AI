@@ -44,6 +44,10 @@ class _BookCardState extends State<BookCard> {
       final files = await FilePicker.pickFiles(type: FileType.image);
       if (files.isEmpty) return;
       final file = files.single;
+      // Check the file size before allocating its bytes on Android.
+      if (file.path != null && await File(file.path!).length() > 12 * 1024 * 1024) {
+        throw const FormatException('Cover too large');
+      }
       final bytes = await file.readAsBytes();
       if (bytes.length > 12 * 1024 * 1024) throw const FormatException('Cover too large');
       final dir = await getApplicationDocumentsDirectory();
