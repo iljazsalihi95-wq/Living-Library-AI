@@ -38,4 +38,21 @@ void main() {
       expect(scene.characterIds.every(characterIds.contains), isTrue, reason: scene.id);
     }
   });
+  test('Reading progress skips empty chapters and stops at the end', () {
+    const book = Book(id: 'reading', title: 'Test', language: 'sq', chapters: [
+      Chapter(title: 'First', paragraphs: ['A', 'B']),
+      Chapter(title: 'Empty', paragraphs: []),
+      Chapter(title: 'Last', paragraphs: ['C']),
+    ]);
+    const first = ReadingProgress(bookId: 'reading', chapterIndex: 0, paragraphIndex: 0);
+    final second = first.nextIn(book);
+    expect(second?.chapterIndex, 0);
+    expect(second?.paragraphIndex, 1);
+    final third = second!.nextIn(book);
+    expect(third?.chapterIndex, 2);
+    expect(third?.paragraphIndex, 0);
+    expect(third!.nextIn(book), isNull);
+    expect(const ReadingProgress(bookId: 'other', chapterIndex: 0, paragraphIndex: 0).nextIn(book), isNull);
+  });
+
 }
