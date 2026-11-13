@@ -26,7 +26,10 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
         total_uncompressed = 0
         for info in archive.infolist():
             name = Path(info.filename).name
+            # Reject unrelated images in the private ZIP before extracting any files.
             if not PATTERN.fullmatch(name):
+                if not info.is_dir() and name.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".heic")):
+                    raise ValueError("Unexpected image in private pilot archive")
                 continue
             # Never accept ambiguous archive paths or encrypted image entries.
             parts = info.filename.replace("\\", "/").split("/")
