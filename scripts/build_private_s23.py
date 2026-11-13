@@ -89,12 +89,19 @@ def build(zip_path):
     ensure_private_frames_untracked()
     # A private ZIP must never be part of the tracked Git tree. Refuse a
     # tracked archive even when it is outside the conventional assets folder.
-    tracked_zip = subprocess.run(
-        ["git", "ls-files", "--error-unmatch", "--", str(zip_path)],
-        cwd=ROOT, capture_output=True, text=True,
-    )
-    if tracked_zip.returncode == 0:
-        raise RuntimeError("Private pilot ZIP is tracked by Git; untrack it before building")
+    # Git pathspecs are repository-relative; an absolute ZIP path can bypass
+    # ls-files checks on some Git versions. Resolve before testing the index.
+    try:
+        relative_zip = zip_path.resolve().relative_to(ROOT.resolve())
+    except ValueError:
+        relative_zip = None  # Archive outside the checkout cannot be tracked here.
+    if relative_zip is not None:
+        tracked_zip = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", "--", relative_zip.as_posix()],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        if tracked_zip.returncode == 0:
+            raise RuntimeError("Private pilot ZIP is tracked by Git; untrack it before building")
     # Never mistake an APK from an earlier run for the output of this build.
     if APK.exists():
         APK.unlink()
