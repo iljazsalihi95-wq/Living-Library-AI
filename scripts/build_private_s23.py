@@ -87,6 +87,14 @@ def build(zip_path):
     if not zip_path.is_file():
         raise FileNotFoundError(zip_path)
     ensure_private_frames_untracked()
+    # A private ZIP must never be part of the tracked Git tree. Refuse a
+    # tracked archive even when it is outside the conventional assets folder.
+    tracked_zip = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", str(zip_path)],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    if tracked_zip.returncode == 0:
+        raise RuntimeError("Private pilot ZIP is tracked by Git; untrack it before building")
     # Never mistake an APK from an earlier run for the output of this build.
     if APK.exists():
         APK.unlink()
