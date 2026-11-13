@@ -3,7 +3,9 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 MODE = "library"
-size = 512
+size = 1024
+# Draw at high resolution, then downsample for crisp Samsung One UI launcher icons.
+scale = 2
 navy = (7, 17, 31) if MODE == "studio" else (7, 27, 23)
 gold = (232, 193, 112) if MODE == "studio" else (221, 187, 112)
 accent = (34, 58, 83) if MODE == "studio" else (23, 72, 59)
@@ -28,8 +30,11 @@ else:
     d.line([(286, 180), (360, 158)], fill=gold, width=7)
     d.line([(286, 218), (360, 196)], fill=gold, width=7)
     d.ellipse((338, 75, 365, 102), fill=gold)
+assert im.getbbox() is not None, "Launcher artwork is empty"
 for density, px in (("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)):
     out = Path("android/app/src/main/res") / ("mipmap-" + density) / "ic_launcher.png"
     out.parent.mkdir(parents=True, exist_ok=True)
-    im.resize((px, px), Image.Resampling.LANCZOS).save(out)
+    icon = im.resize((px, px), Image.Resampling.LANCZOS)
+    assert icon.size == (px, px)
+    icon.save(out)
 print("Generated original launcher icons:", MODE)
