@@ -37,7 +37,10 @@ def verify_apk():
     if not APK.is_file() or APK.stat().st_size == 0:
         raise RuntimeError("Samsung S23 APK is missing or empty")
     with zipfile.ZipFile(APK) as package:
-        names = set(package.namelist())
+        entries = package.namelist()
+        if len(entries) != len(set(entries)):
+            raise RuntimeError("APK contains duplicate ZIP entries")
+        names = set(entries)
         missing = [
             f"assets/flutter_assets/assets/story/{name}"
             for name in EXPECTED
@@ -55,10 +58,21 @@ def verify_apk():
                 matches = sha256_stream(bundled_stream) == sha256_stream(local_stream)
             if not matches:
                 raise RuntimeError(f"APK pilot image differs from local source: {name}")
-        if "lib/arm64-v8a/libflutter.so" not in names:
+        runtime = "lib/arm64-v8a/libflutter.so"
+        if runtime not in names:
             raise RuntimeError("APK has no arm64 Flutter runtime")
-        if package.testzip() is not None:
-            raise RuntimeError("APK ZIP integrity check failed")
+        # Check binary architecture, not just its filename.
+        for entry in sorted(name for name in names
+                            if name.startswith("lib/arm64-v8a/") and name.endswith(".so")):
+            with package.open(entry) as binary:
+                header = binary.read(20)
+            if (len(header) < 20 or header[:4] != bytes.fromhex("7f454c46")
+                    or header[4:6] != bytes.fromhex("0201")
+                    or int.from_bytes(header[18:20], "little") != 183):
+                raise RuntimeError(f"Invalid AArch64 ELF library in APK: {entry}")
+        bad_entry = package.testzip()
+        if bad_entry is not None:
+            raise RuntimeError(f"APK ZIP integrity check failed: {bad_entry}")
     checksum = sha256_file(APK)
     print(f"VERIFIED private S23 APK: {APK}")
     print(f"SHA256: {checksum}")
