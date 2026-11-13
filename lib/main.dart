@@ -60,6 +60,10 @@ class _LibraryHomeState extends State<LibraryHome> {
     final extension = (file.extension?.trim().isNotEmpty == true
             ? file.extension!.toLowerCase()
             : (filename.contains('.') ? filename.split('.').last : ''));
+    if (!['txt', 'md', 'markdown', 'pdf', 'zip'].contains(extension)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Format i pambështetur. Zgjidh TXT, Markdown, PDF ose ZIP me ilustrime.')));
+      return;
+    }
     if (extension == 'zip') {
       try {
         if (file.path != null && await File(file.path!).length() > 80 * 1024 * 1024) {
