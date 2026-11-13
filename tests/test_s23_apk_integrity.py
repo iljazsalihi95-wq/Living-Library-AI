@@ -44,7 +44,7 @@ class S23ApkIntegrityTests(unittest.TestCase):
                         b"wrong bytes" if name == corrupt else payload,
                     )
             if arm64:
-                archive.writestr("lib/arm64-v8a/libflutter.so", b"synthetic-runtime")
+                archive.writestr("lib/arm64-v8a/libflutter.so", b"\x7fELF\x02\x01" + bytes(12) + (183).to_bytes(2, "little") + bytes(32))
 
     def test_matching_22_images_and_arm64(self):
         self.make_apk()
