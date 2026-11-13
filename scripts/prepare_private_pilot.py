@@ -62,7 +62,19 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
     if check_only:
         print("Private archive verified: 22 distinct JPEGs. No files were written.")
         return 22
-    # Never overwrite or update pilot frames already tracked in Git.\n    # .gitignore does not protect files that were previously committed.\n    tracked = subprocess.run(\n        ["git", "ls-files", "--", "assets/story/"],\n        cwd=ROOT, check=True, capture_output=True, text=True,\n    ).stdout.splitlines()\n    tracked_frames = {Path(item).name for item in tracked} & set(frames)\n    if tracked_frames:\n        raise ValueError(\n            "Private pilot import refused: Git tracks pilot frames; "\n            "remove them from the Git index first (no photos were written)"\n        )\n    # Check every output path before modifying the Flutter manifest.
+    # Never overwrite or update pilot frames already tracked in Git.
+    # .gitignore does not protect files that were previously committed.
+    tracked = subprocess.run(
+        ["git", "ls-files", "--", "assets/story/"],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    ).stdout.splitlines()
+    tracked_frames = {Path(item).name for item in tracked} & set(frames)
+    if tracked_frames:
+        raise ValueError(
+            "Private pilot import refused: Git tracks pilot frames; "
+            "remove them from the Git index first (no photos were written)"
+        )
+    # Check every output path before modifying the Flutter manifest.
     # A rejected symlink must not leave a partially modified checkout.
     target = ROOT / "assets" / "story"
     # Reject symlinked output directories or frames before writing private bytes.
