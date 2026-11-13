@@ -85,6 +85,22 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
     for name in frames:
         if (target / name).is_symlink():
             raise ValueError(f"Private pilot output must not be a symlink: {name}")
+    # Refuse a checkout with other story photographs. A Flutter asset-directory
+    # declaration bundles every file in this directory, not only frame_01..22.
+    # Check before writing to avoid accidentally packaging unrelated private data.
+    if target.exists():
+        if not target.is_dir():
+            raise ValueError("Private pilot output path is not a directory")
+        unexpected = sorted(
+            item.name for item in target.iterdir()
+            if item.is_file() and item.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
+            and item.name not in frames
+        )
+        if unexpected:
+            raise ValueError(
+                "Private pilot import refused: unexpected story images already exist: "
+                + ", ".join(unexpected)
+            )
     # Validate the manifest and destination before writing anything.
     pubspec = ROOT / "pubspec.yaml"
     if pubspec.is_symlink():
