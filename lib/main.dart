@@ -155,8 +155,15 @@ class _LibraryHomeState extends State<LibraryHome> {
         uniqueTitle = '$stem ($duplicateIndex)$suffix';
         duplicateIndex++;
       }
+      // SharedPreferences is not intended for an unlimited collection of large books.
+      // Refuse an import that would exceed the practical local JSON storage budget.
       library.insert(0, {'title': uniqueTitle, 'content': content});
-      final saved = await prefs.setString('library_books_v1', jsonEncode(library));
+      final encodedLibrary = jsonEncode(library);
+      if (utf8.encode(encodedLibrary).length > 20 * 1024 * 1024) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biblioteka ka arritur kufirin lokal 20 MB. Librat ekzistues nuk u ndryshuan.')));
+        return;
+      }
+      final saved = await prefs.setString('library_books_v1', encodedLibrary);
       if (!saved) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ruajtja e librit dështoi. Provo përsëri.')));
         return;
