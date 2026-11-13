@@ -17,6 +17,22 @@ class ReadingProgress {
   final int paragraphIndex;
   bool get isValid => chapterIndex >= 0 && paragraphIndex >= 0;
 
+  /// Move to the next paragraph, including the first paragraph of the next
+  /// non-empty chapter. Never return a bookmark outside the book.
+  ReadingProgress? nextIn(Book book) {
+    if (!isValidFor(book)) return null;
+    final paragraphs = book.chapters[chapterIndex].paragraphs;
+    if (paragraphIndex + 1 < paragraphs.length) {
+      return ReadingProgress(bookId: bookId, chapterIndex: chapterIndex, paragraphIndex: paragraphIndex + 1);
+    }
+    for (var nextChapter = chapterIndex + 1; nextChapter < book.chapters.length; nextChapter++) {
+      if (book.chapters[nextChapter].paragraphs.isNotEmpty) {
+        return ReadingProgress(bookId: bookId, chapterIndex: nextChapter, paragraphIndex: 0);
+      }
+    }
+    return null;
+  }
+
   /// Reject stale bookmarks pointing outside the current book contents.
   bool isValidFor(Book book) {
     if (!isValid || bookId != book.id || chapterIndex >= book.chapters.length) {
