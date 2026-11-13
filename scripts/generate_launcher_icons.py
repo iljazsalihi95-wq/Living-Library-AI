@@ -3,9 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 MODE = "library"
-size = 1024
-# Draw at high resolution, then downsample for crisp Samsung One UI launcher icons.
-scale = 2
+size = 512
 navy = (7, 17, 31) if MODE == "studio" else (7, 27, 23)
 gold = (232, 193, 112) if MODE == "studio" else (221, 187, 112)
 accent = (34, 58, 83) if MODE == "studio" else (23, 72, 59)
