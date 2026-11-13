@@ -41,6 +41,20 @@ def verify_apk():
         if len(entries) != len(set(entries)):
             raise RuntimeError("APK contains duplicate ZIP entries")
         names = set(entries)
+        # Only the 22 approved pilot frames may be bundled. Extra image assets
+        # can accidentally disclose private photographs from a prior import.
+        story_prefix = "assets/flutter_assets/assets/story/"
+        bundled_story_images = {
+            name for name in names
+            if name.startswith(story_prefix)
+            and name.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+        }
+        expected_story_images = {story_prefix + name for name in EXPECTED}
+        unexpected = sorted(bundled_story_images - expected_story_images)
+        if unexpected:
+            raise RuntimeError(
+                f"Private APK contains {len(unexpected)} unexpected story images: {unexpected}"
+            )
         missing = [
             f"assets/flutter_assets/assets/story/{name}"
             for name in EXPECTED
