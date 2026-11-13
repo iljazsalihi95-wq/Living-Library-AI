@@ -72,6 +72,14 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
             "flutter:\n  uses-material-design: true\n  assets:\n    - assets/story/",
         ), encoding="utf-8")
     target = ROOT / "assets" / "story"
+    # Reject symlinked output directories or frames before writing private bytes.
+    # Otherwise a checkout could redirect the import outside the project.
+    assets_dir = ROOT / "assets"
+    if assets_dir.is_symlink() or target.is_symlink():
+        raise ValueError("Private pilot output directory must not be a symlink")
+    for name in frames:
+        if (target / name).is_symlink():
+            raise ValueError(f"Private pilot output must not be a symlink: {name}")
     target.mkdir(parents=True, exist_ok=True)
     for name, data in sorted(frames.items()):
         (target / name).write_bytes(data)
