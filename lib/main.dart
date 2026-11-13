@@ -54,7 +54,13 @@ class _LibraryHomeState extends State<LibraryHome> {
     }
     if (!mounted || files.isEmpty) return;
     final file = files.single;
-    if (file.extension?.toLowerCase() == 'zip') {
+    // Some Android document providers omit PlatformFile.extension.
+    // Derive it from the selected filename so supported imports still work.
+    final filename = file.name.toLowerCase();
+    final extension = (file.extension?.trim().isNotEmpty == true
+            ? file.extension!.toLowerCase()
+            : (filename.contains('.') ? filename.split('.').last : ''));
+    if (extension == 'zip') {
       try {
         if (file.path != null && await File(file.path!).length() > 80 * 1024 * 1024) {
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paketa ZIP tejkalon 80 MiB. Importimi u ndal për të mbrojtur memorien e telefonit.')));
@@ -78,7 +84,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       }
       return;
     }
-    if (['txt', 'md', 'markdown', 'pdf'].contains(file.extension?.toLowerCase())) {
+    if (['txt', 'md', 'markdown', 'pdf'].contains(extension)) {
       String content;
       try {
         if (file.path != null && await File(file.path!).length() > 10 * 1024 * 1024) {
@@ -88,7 +94,7 @@ class _LibraryHomeState extends State<LibraryHome> {
         }
         final bytes = await file.readAsBytes();
         if (bytes.length > 10 * 1024 * 1024) throw const FormatException('Libri tejkalon 10 MB');
-        if (file.extension?.toLowerCase() == 'pdf') {
+        if (extension == 'pdf') {
           await pdfrxFlutterInitialize();
           final document = await PdfDocument.openData(bytes);
           try {
@@ -159,7 +165,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       return;
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Formati ${file.extension?.toUpperCase() ?? 'i zgjedhur'} nuk mbështetet ende për lexim. Përdor TXT, Markdown ose PDF me tekst.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Formati ${extension.toUpperCase() ?? 'i zgjedhur'} nuk mbështetet ende për lexim. Përdor TXT, Markdown ose PDF me tekst.')));
   }
 
   @override
