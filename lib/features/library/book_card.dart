@@ -15,7 +15,21 @@ class BookCard extends StatefulWidget {
 class _BookCardState extends State<BookCard> {
   String category = 'Pa kategori', cover = '';
   String get storageKey => 'book_meta_${base64Url.encode(utf8.encode(widget.title))}';
-  @override void initState() { super.initState(); _load(); }\n  @override void didUpdateWidget(covariant BookCard oldWidget) {\n    super.didUpdateWidget(oldWidget);\n    if (oldWidget.title != widget.title) {\n      category = 'Pa kategori';\n      cover = '';\n      _load();\n    }\n  }
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant BookCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.title != widget.title) {
+      category = 'Pa kategori';
+      cover = '';
+      _load();
+    }
+  }
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     try { final data = jsonDecode(prefs.getString(storageKey) ?? '{}') as Map; if (mounted) setState(() { category = data['category'] as String? ?? 'Pa kategori'; cover = data['cover'] as String? ?? ''; }); } catch (_) { /* Book text remains accessible. */ }
