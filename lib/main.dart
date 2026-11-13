@@ -29,6 +29,11 @@ class LibraryApp extends StatelessWidget {
           brightness: Brightness.dark,
           scaffoldBackgroundColor: emerald,
           colorScheme: ColorScheme.fromSeed(seedColor: gold, brightness: Brightness.dark),
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: gold,
+            selectionColor: gold.withValues(alpha: 0.28),
+            selectionHandleColor: gold,
+          ),
           useMaterial3: true,
         ),
         home: const LibraryHome(),
