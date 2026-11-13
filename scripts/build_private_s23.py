@@ -19,6 +19,15 @@ def run(*args):
     subprocess.run(args, cwd=ROOT, check=True)
 
 
+def sha256_file(path):
+    """Hash large APKs in bounded memory on laptops and CI runners."""
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def verify_apk():
     if not APK.is_file() or APK.stat().st_size == 0:
         raise RuntimeError("Samsung S23 APK is missing or empty")
@@ -44,7 +53,7 @@ def verify_apk():
             raise RuntimeError("APK has no arm64 Flutter runtime")
         if package.testzip() is not None:
             raise RuntimeError("APK ZIP integrity check failed")
-    checksum = hashlib.sha256(APK.read_bytes()).hexdigest()
+    checksum = sha256_file(APK)
     print(f"VERIFIED private S23 APK: {APK}")
     print(f"SHA256: {checksum}")
     return checksum
