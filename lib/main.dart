@@ -101,7 +101,13 @@ class _LibraryHomeState extends State<LibraryHome> {
             content = pages.join('\n\n');
             if (content.trim().isEmpty) throw const FormatException('PDF-ja nuk ka shtresë teksti. Skanimet kërkojnë OCR, që nuk është konfiguruar.');
           } finally { await document.dispose(); }
-        } else { content = utf8.decode(bytes).replaceFirst(RegExp(r'^\uFEFF'), ''); }
+        } else {
+          try {
+            content = utf8.decode(bytes, allowMalformed: false).replaceFirst(RegExp(r'^\uFEFF'), '');
+          } on FormatException {
+            throw const FormatException('Teksti nuk është UTF-8 i vlefshëm. Ruaje skedarin si UTF-8 dhe provo përsëri.');
+          }
+        }
       } on FormatException catch (error) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
         return;
