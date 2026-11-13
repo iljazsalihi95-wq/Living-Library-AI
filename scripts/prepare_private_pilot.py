@@ -61,16 +61,8 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
     if check_only:
         print("Private archive verified: 22 distinct JPEGs. No files were written.")
         return 22
-    # Validate the Flutter manifest before touching any private photo files.
-    pubspec = ROOT / "pubspec.yaml"
-    original = pubspec.read_text(encoding="utf-8")
-    if "    - assets/story/" not in original:
-        if "flutter:\n  uses-material-design: true" not in original:
-            raise ValueError("Unknown pubspec layout")
-        pubspec.write_text(original.replace(
-            "flutter:\n  uses-material-design: true",
-            "flutter:\n  uses-material-design: true\n  assets:\n    - assets/story/",
-        ), encoding="utf-8")
+    # Check every output path before modifying the Flutter manifest.
+    # A rejected symlink must not leave a partially modified checkout.
     target = ROOT / "assets" / "story"
     # Reject symlinked output directories or frames before writing private bytes.
     # Otherwise a checkout could redirect the import outside the project.
@@ -80,7 +72,22 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
     for name in frames:
         if (target / name).is_symlink():
             raise ValueError(f"Private pilot output must not be a symlink: {name}")
+    # Validate the manifest and destination before writing anything.
+    pubspec = ROOT / "pubspec.yaml"
+    if pubspec.is_symlink():
+        raise ValueError("Flutter manifest must not be a symlink")
+    original = pubspec.read_text(encoding="utf-8")
+    updated = original
+    if "    - assets/story/" not in original:
+        if "flutter:\n  uses-material-design: true" not in original:
+            raise ValueError("Unknown pubspec layout")
+        updated = original.replace(
+            "flutter:\n  uses-material-design: true",
+            "flutter:\n  uses-material-design: true\n  assets:\n    - assets/story/",
+        )
     target.mkdir(parents=True, exist_ok=True)
+    if updated != original:
+        pubspec.write_text(updated, encoding="utf-8")
     for name, data in sorted(frames.items()):
         (target / name).write_bytes(data)
     print("Private bundle ready: 22 JPEGs. Do not commit photos or pubspec.yaml.")
