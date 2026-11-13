@@ -135,7 +135,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       final dot = file.name.lastIndexOf('.');
       final stem = dot > 0 ? file.name.substring(0, dot) : file.name;
       final suffix = dot > 0 ? file.name.substring(dot) : '';
-      while (library.any((entry) => (entry['title'] as String).toLowerCase() == uniqueTitle.toLowerCase())) {
+      while (library.any((entry) => (entry['title'] as String).trim().toLowerCase() == uniqueTitle.trim().toLowerCase())) {
         uniqueTitle = '$stem ($duplicateIndex)$suffix';
         duplicateIndex++;
       }
