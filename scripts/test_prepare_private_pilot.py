@@ -4,7 +4,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "prepare_private_pilot.py"
 spec = importlib.util.spec_from_file_location("private_pilot", SCRIPT)
@@ -21,7 +21,7 @@ class PrivatePilotTest(unittest.TestCase):
             with zipfile.ZipFile(archive, "w") as z:
                 for i in range(1, 23):
                     z.writestr(f"assets/story/frame_{i:02d}.jpg", b"\xff\xd8" + str(i).encode() + b"\xff\xd9")
-            with patch.object(pilot, "ROOT", root):
+            with patch.object(pilot, "ROOT", root), patch.object(pilot.subprocess, "run", return_value=Mock(stdout="")):
                 self.assertEqual(pilot.prepare(archive), 22)
                 self.assertEqual(len(list((root / "assets/story").glob("*.jpg"))), 22)
                 self.assertIn("    - assets/story/", (root / "pubspec.yaml").read_text())
