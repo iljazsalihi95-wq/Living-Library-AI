@@ -34,6 +34,16 @@ class LibraryApp extends StatelessWidget {
             selectionColor: gold.withValues(alpha: 0.28),
             selectionHandleColor: gold,
           ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: panel,
+            indicatorColor: gold.withValues(alpha: 0.20),
+            iconTheme: WidgetStateProperty.resolveWith((states) =>
+              IconThemeData(color: states.contains(WidgetState.selected) ? gold : const Color(0xFFB7C2D0))),
+            labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+              color: states.contains(WidgetState.selected) ? gold : const Color(0xFFB7C2D0),
+              fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
+            )),
+          ),
           useMaterial3: true,
         ),
         home: const LibraryHome(),
