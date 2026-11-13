@@ -72,6 +72,23 @@ class LibraryApp extends StatelessWidget {
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: gold,
+              foregroundColor: panel,
+              minimumSize: const Size(48, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          outlinedButtonTheme: OutlinedButtonThemeData(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: gold,
+              minimumSize: const Size(48, 48),
+              side: BorderSide(color: gold),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
           useMaterial3: true,
         ),
         home: const LibraryHome(),
