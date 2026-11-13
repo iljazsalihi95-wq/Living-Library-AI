@@ -79,13 +79,13 @@ class _LibraryHomeState extends State<LibraryHome> {
       return;
     }
     if (['txt', 'md', 'markdown', 'pdf'].contains(file.extension?.toLowerCase())) {
-      if (file.path != null && await File(file.path!).length() > 10 * 1024 * 1024) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është mbi 10 MB. Për të mbrojtur bibliotekën lokale, përdor një skedar më të vogël.')));
-        return;
-      }
       String content;
       try {
+        if (file.path != null && await File(file.path!).length() > 10 * 1024 * 1024) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Libri është mbi 10 MB. Për të mbrojtur bibliotekën lokale, përdor një skedar më të vogël.')));
+          return;
+        }
         final bytes = await file.readAsBytes();
         if (bytes.length > 10 * 1024 * 1024) throw const FormatException('Libri tejkalon 10 MB');
         if (file.extension?.toLowerCase() == 'pdf') {
