@@ -19,13 +19,18 @@ def run(*args):
     subprocess.run(args, cwd=ROOT, check=True)
 
 
+def sha256_stream(stream):
+    """Hash a readable stream without materializing a complete image in RAM."""
+    digest = hashlib.sha256()
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        digest.update(chunk)
+    return digest.digest()
+
+
 def sha256_file(path):
     """Hash large APKs in bounded memory on laptops and CI runners."""
-    digest = hashlib.sha256()
     with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+        return sha256_stream(stream).hex()
 
 
 def verify_apk():
@@ -46,8 +51,9 @@ def verify_apk():
             local = ROOT / "assets" / "story" / name
             if not local.is_file():
                 raise RuntimeError(f"Missing local pilot source: {name}")
-            bundled = package.read(f"assets/flutter_assets/assets/story/{name}")
-            if hashlib.sha256(bundled).digest() != hashlib.sha256(local.read_bytes()).digest():
+            with package.open(f"assets/flutter_assets/assets/story/{name}") as bundled_stream, local.open("rb") as local_stream:
+                matches = sha256_stream(bundled_stream) == sha256_stream(local_stream)
+            if not matches:
                 raise RuntimeError(f"APK pilot image differs from local source: {name}")
         if "lib/arm64-v8a/libflutter.so" not in names:
             raise RuntimeError("APK has no arm64 Flutter runtime")
