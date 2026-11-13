@@ -87,10 +87,17 @@ def build(zip_path):
     if not zip_path.is_file():
         raise FileNotFoundError(zip_path)
     ensure_private_frames_untracked()
+    # Never mistake an APK from an earlier run for the output of this build.
+    if APK.exists():
+        APK.unlink()
     # Import the validated private asset preparation script.
     sys.path.insert(0, str(ROOT / "scripts"))
     from prepare_private_pilot import prepare
-    assert prepare(zip_path) == 22
+    # Validate the complete archive before writing any private files locally.
+    if prepare(zip_path, check_only=True) != 22:
+        raise RuntimeError("Private pilot archive did not contain 22 valid images")
+    if prepare(zip_path) != 22:
+        raise RuntimeError("Private pilot import did not complete")
     run("flutter", "pub", "get")
     run("flutter", "analyze")
     run("flutter", "test")
