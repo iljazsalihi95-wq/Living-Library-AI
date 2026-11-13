@@ -165,7 +165,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       return;
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Formati ${extension.toUpperCase() ?? 'i zgjedhur'} nuk mbështetet ende për lexim. Përdor TXT, Markdown ose PDF me tekst.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Formati ${extension.isEmpty ? 'i zgjedhur' : extension.toUpperCase()} nuk mbështetet ende për lexim. Përdor TXT, Markdown ose PDF me tekst.')));
   }
 
   @override
