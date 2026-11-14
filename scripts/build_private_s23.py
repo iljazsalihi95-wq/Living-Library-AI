@@ -50,10 +50,15 @@ def verify_apk():
             and name.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
         }
         expected_story_images = {story_prefix + name for name in EXPECTED}
-        unexpected = sorted(bundled_story_images - expected_story_images)
+        # Flutter can bundle non-image files from an asset directory too.
+        # Reject all unexpected story entries, not just image extensions.
+        bundled_story_entries = {
+            name for name in names if name.startswith(story_prefix)
+        }
+        unexpected = sorted(bundled_story_entries - expected_story_images)
         if unexpected:
             raise RuntimeError(
-                f"Private APK contains {len(unexpected)} unexpected story images: {unexpected}"
+                f"Private APK contains {len(unexpected)} unexpected story assets: {unexpected}"
             )
         missing = [
             f"assets/flutter_assets/assets/story/{name}"
