@@ -55,4 +55,19 @@ void main() {
     expect(const ReadingProgress(bookId: 'other', chapterIndex: 0, paragraphIndex: 0).nextIn(book), isNull);
   });
 
+  test('Previous paragraph skips empty chapters and rejects stale progress', () {
+    const book = Book(id: 'reading', title: 'Test', language: 'sq', chapters: [
+      Chapter(title: 'First', paragraphs: ['A', 'B']),
+      Chapter(title: 'Empty', paragraphs: []),
+      Chapter(title: 'Last', paragraphs: ['C']),
+    ]);
+    const last = ReadingProgress(bookId: 'reading', chapterIndex: 2, paragraphIndex: 0);
+    final previous = last.previousIn(book);
+    expect(previous?.chapterIndex, 0);
+    expect(previous?.paragraphIndex, 1);
+    expect(previous?.previousIn(book)?.paragraphIndex, 0);
+    expect(previous?.previousIn(book)?.previousIn(book), isNull);
+    expect(const ReadingProgress(bookId: 'wrong', chapterIndex: 2, paragraphIndex: 0).previousIn(book), isNull);
+  });
+
 }
