@@ -56,5 +56,38 @@ class PrivatePilotTests(unittest.TestCase):
                 pilot.prepare(path, check_only=True)
 
 
+    def test_rejects_duplicate_zip_filename(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "duplicate.zip"
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_STORED) as archive:
+                for i in range(1, 23):
+                    archive.writestr(f"frame_{i:02d}.jpg", fake_jpeg(i))
+                # A second ZIP member with the same name must not silently win.
+                archive.writestr("frame_01.jpg", fake_jpeg(1))
+            with self.assertRaisesRegex(ValueError, "Duplicate"):
+                pilot.prepare(path, check_only=True)
+
+    def test_rejects_oversized_frame_before_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oversized.zip"
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_STORED) as archive:
+                for i in range(1, 23):
+                    archive.writestr(f"frame_{i:02d}.jpg", fake_jpeg(i))
+            # Modify only the in-memory ZIP metadata to exercise the size guard,
+            # without allocating a 20 MiB test photograph.
+            original = zipfile.ZipFile
+            class OversizedZip(original):
+                def infolist(self):
+                    entries = super().infolist()
+                    entries[0].file_size = 20 * 1024 * 1024 + 1
+                    return entries
+            try:
+                zipfile.ZipFile = OversizedZip
+                with self.assertRaisesRegex(ValueError, "oversized frame"):
+                    pilot.prepare(path, check_only=True)
+            finally:
+                zipfile.ZipFile = original
+
+
 if __name__ == "__main__":
     unittest.main()
