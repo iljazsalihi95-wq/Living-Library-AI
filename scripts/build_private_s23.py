@@ -136,12 +136,14 @@ def build(zip_path):
     # Validate the complete archive before writing any private files locally.
     if prepare(zip_path, check_only=True) != 22:
         raise RuntimeError("Private pilot archive did not contain 22 valid images")
-    # Preserve the last working APK if the supplied ZIP fails validation.
-    # Only discard stale output once the private input has passed preflight.
-    if APK.exists():
-        APK.unlink()
+    # Keep the previous APK intact if the private import fails. The build
+    # tool replaces the output only after the validated import succeeds.
     if prepare(zip_path) != 22:
         raise RuntimeError("Private pilot import did not complete")
+    # Never accept an old artifact as proof of this build succeeding.
+    # Flutter will write the APK anew; remove the previous output only now.
+    if APK.exists():
+        APK.unlink()
     run("flutter", "pub", "get")
     run("flutter", "analyze")
     run("flutter", "test")
