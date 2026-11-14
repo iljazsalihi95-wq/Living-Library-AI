@@ -40,6 +40,27 @@ class ReadingProgress {
     return null;
   }
 
+  /// Recover a bookmark after chapters or paragraphs have changed.
+  /// Never transfer a bookmark from a different book.
+  ReadingProgress? recoverIn(Book book) {
+    if (bookId != book.id || !isValid) return null;
+    if (isValidFor(book)) return this;
+    if (book.chapters.isEmpty) return null;
+    final lastChapter = chapterIndex < book.chapters.length
+        ? chapterIndex
+        : book.chapters.length - 1;
+    for (var chapter = lastChapter; chapter >= 0; chapter--) {
+      final paragraphs = book.chapters[chapter].paragraphs;
+      if (paragraphs.isNotEmpty) {
+        final index = chapter == chapterIndex && paragraphIndex < paragraphs.length
+            ? paragraphIndex
+            : paragraphs.length - 1;
+        return ReadingProgress(bookId: bookId, chapterIndex: chapter, paragraphIndex: index);
+      }
+    }
+    return firstIn(book);
+  }
+
   /// Move to the next paragraph, including the first paragraph of the next
   /// non-empty chapter. Never return a bookmark outside the book.
   ReadingProgress? nextIn(Book book) {
