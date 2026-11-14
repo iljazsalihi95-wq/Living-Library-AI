@@ -33,8 +33,7 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
             # Never accept ambiguous archive paths or encrypted image entries.
             parts = info.filename.replace("\\", "/").split("/")
             if (info.filename.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", info.filename)
-                    or any(part in ("", ".", "..") for part in parts)):
-
+                    or len(parts) != 1 or any(part in ("", ".", "..") for part in parts)):
                 raise ValueError(f"Unsafe pilot archive path: {info.filename}")
             # ZIP entries can masquerade as images while carrying Unix symlink metadata.
             mode = (info.external_attr >> 16) & 0xFFFF
