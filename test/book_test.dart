@@ -82,4 +82,20 @@ void main() {
     expect(const ReadingProgress(bookId: 'wrong', chapterIndex: 2, paragraphIndex: 0).previousIn(book), isNull);
   });
 
+  test('Last reading position skips empty trailing chapters', () {
+    const book = Book(id: 'last', title: 'Book', language: 'sq', chapters: [
+      Chapter(title: 'Cover', paragraphs: []),
+      Chapter(title: 'Text', paragraphs: ['A', 'B']),
+      Chapter(title: 'Appendix', paragraphs: []),
+    ]);
+    final last = ReadingProgress.lastIn(book);
+    expect(last?.chapterIndex, 1);
+    expect(last?.paragraphIndex, 1);
+    expect(last?.isValidFor(book), isTrue);
+    const empty = Book(id: 'empty', title: 'Empty', language: 'sq', chapters: [
+      Chapter(title: 'Cover', paragraphs: []),
+    ]);
+    expect(ReadingProgress.lastIn(empty), isNull);
+  });
+
 }
