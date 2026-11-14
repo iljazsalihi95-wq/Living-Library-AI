@@ -165,13 +165,16 @@ class _LibraryHomeState extends State<LibraryHome> {
             if (document.pages.length > 300) throw const FormatException('PDF-ja ka mbi 300 faqe. Ndaje në pjesë më të vogla për importim të sigurt.');
             if (document.permissions?.allowsCopying == false) throw const FormatException('PDF-ja nuk lejon nxjerrjen e tekstit.');
             final pages = <String>[];
+            var extractedCharacters = 0;
             for (final page in document.pages) {
               final text = await page.loadText();
               if (text != null && text.fullText.trim().isNotEmpty) {
-                pages.add('## Faqja ${page.pageNumber}\n\n${text.fullText}');
-                if (pages.fold<int>(0, (total, part) => total + part.length) > 10 * 1024 * 1024) {
+                final section = '## Faqja ${page.pageNumber}\n\n${text.fullText}';
+                extractedCharacters += section.length;
+                if (extractedCharacters > 10 * 1024 * 1024) {
                   throw const FormatException('Teksti i PDF-së është tepër i madh. Ndaje librin në pjesë më të vogla.');
                 }
+                pages.add(section);
               }
             }
             content = pages.join('\n\n');
