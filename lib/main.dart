@@ -167,7 +167,12 @@ class _LibraryHomeState extends State<LibraryHome> {
             final pages = <String>[];
             for (final page in document.pages) {
               final text = await page.loadText();
-              if (text != null && text.fullText.trim().isNotEmpty) pages.add('## Faqja ${page.pageNumber}\n\n${text.fullText}');
+              if (text != null && text.fullText.trim().isNotEmpty) {
+                pages.add('## Faqja ${page.pageNumber}\n\n${text.fullText}');
+                if (pages.fold<int>(0, (total, part) => total + part.length) > 10 * 1024 * 1024) {
+                  throw const FormatException('Teksti i PDF-së është tepër i madh. Ndaje librin në pjesë më të vogla.');
+                }
+              }
             }
             content = pages.join('\n\n');
             if (content.trim().isEmpty) throw const FormatException('PDF-ja nuk ka shtresë teksti. Skanimet kërkojnë OCR, që nuk është konfiguruar.');
