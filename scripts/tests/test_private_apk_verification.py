@@ -28,7 +28,7 @@ class PrivateApkVerificationTests(unittest.TestCase):
                         b"changed" if name == changed else payload,
                     )
             if arm64:
-                archive.writestr("lib/arm64-v8a/libflutter.so", b"synthetic-runtime")
+                archive.writestr("lib/arm64-v8a/libflutter.so", b"\x7fELF\x02\x01" + bytes(12) + (183).to_bytes(2, "little"))
         return root, apk
 
     def verify(self, root, apk):
@@ -39,6 +39,14 @@ class PrivateApkVerificationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root, apk = self.make_fixture(d)
             self.assertEqual(len(self.verify(root, apk)), 64)
+
+    def test_invalid_arm64_binary_fails(self):
+        with tempfile.TemporaryDirectory() as d:
+            root, apk = self.make_fixture(d)
+            with zipfile.ZipFile(apk, "a") as archive:
+                archive.writestr("lib/arm64-v8a/libinvalid.so", b"not-an-elf")
+            with self.assertRaisesRegex(RuntimeError, "Invalid AArch64 ELF"):
+                self.verify(root, apk)
 
     def test_missing_frame_fails(self):
         with tempfile.TemporaryDirectory() as d:
