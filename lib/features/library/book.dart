@@ -75,6 +75,25 @@ class ReadingProgress {
     return total == 0 ? null : (reached + paragraphIndex + 1) / total;
   }
 
+  /// Jump to a paragraph using a normalized reader slider position.
+  /// The first and last positions are reachable even with empty chapters.
+  /// Invalid slider values do not create broken bookmarks.
+  static ReadingProgress? atFraction(Book book, double fraction) {
+    if (!fraction.isFinite || fraction < 0 || fraction > 1) return null;
+    final total = book.chapters.fold<int>(0, (sum, chapter) => sum + chapter.paragraphs.length);
+    if (total == 0) return null;
+    final target = fraction == 0 ? 0 : ((fraction * total).ceil() - 1).clamp(0, total - 1);
+    var index = target;
+    for (var chapter = 0; chapter < book.chapters.length; chapter++) {
+      final count = book.chapters[chapter].paragraphs.length;
+      if (index < count) {
+        return ReadingProgress(bookId: book.id, chapterIndex: chapter, paragraphIndex: index);
+      }
+      index -= count;
+    }
+    return null;
+  }
+
   /// Move to the next paragraph, including the first paragraph of the next
   /// non-empty chapter. Never return a bookmark outside the book.
   ReadingProgress? nextIn(Book book) {
