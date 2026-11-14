@@ -162,6 +162,7 @@ class _LibraryHomeState extends State<LibraryHome> {
           await pdfrxFlutterInitialize();
           final document = await PdfDocument.openData(bytes);
           try {
+            if (document.pages.length > 300) throw const FormatException('PDF-ja ka mbi 300 faqe. Ndaje në pjesë më të vogla për importim të sigurt.');
             if (document.permissions?.allowsCopying == false) throw const FormatException('PDF-ja nuk lejon nxjerrjen e tekstit.');
             final pages = <String>[];
             for (final page in document.pages) {
