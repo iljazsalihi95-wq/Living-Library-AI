@@ -52,7 +52,7 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
             if info.compress_size == 0 or info.file_size > 200 * info.compress_size:
                 raise ValueError("Suspicious JPEG compression ratio")
             data = archive.read(info)
-            if len(data) < 4 or data[:2] != b"\xff\xd8" or data[-2:] != b"\xff\xd9":
+            if len(data) < 128 or data[:2] != b"\xff\xd8" or data[-2:] != b"\xff\xd9":
                 raise ValueError(f"Invalid JPEG: {name}")
             frames[name] = data
     if len(frames) != 22:
