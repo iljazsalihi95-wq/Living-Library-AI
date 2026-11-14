@@ -94,10 +94,12 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
     if target.exists():
         if not target.is_dir():
             raise ValueError("Private pilot output path is not a directory")
+        # Flutter bundles every file under a declared asset directory.
+        # Reject non-image documents, hidden files, and subdirectories too:
+        # they could otherwise be copied into the private APK unnoticed.
         unexpected = sorted(
             item.name for item in target.iterdir()
-            if item.is_file() and item.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
-            and item.name not in frames
+            if item.name not in frames or not item.is_file()
         )
         if unexpected:
             raise ValueError(
