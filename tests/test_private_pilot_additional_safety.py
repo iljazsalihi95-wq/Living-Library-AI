@@ -13,7 +13,7 @@ from prepare_private_pilot import prepare
 
 
 def fake_jpeg(n):
-    return b"\xff\xd8" + bytes([n]) * 32 + b"\xff\xd9"
+    return b"\xff\xd8" + bytes([n]) * 128 + b"\xff\xd9"
 
 
 def make_zip(change=None):
