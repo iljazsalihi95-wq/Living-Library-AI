@@ -140,13 +140,14 @@ def build(zip_path):
     # tool replaces the output only after the validated import succeeds.
     if prepare(zip_path) != 22:
         raise RuntimeError("Private pilot import did not complete")
-    # Never accept an old artifact as proof of this build succeeding.
-    # Flutter will write the APK anew; remove the previous output only now.
-    if APK.exists():
-        APK.unlink()
+    # Keep the last verified APK while dependency resolution and tests run.
+    # Only invalidate the old artifact immediately before the actual build,
+    # so a failed analyze/test does not destroy a usable private installer.
     run("flutter", "pub", "get")
     run("flutter", "analyze")
     run("flutter", "test")
+    if APK.exists():
+        APK.unlink()
     run("flutter", "build", "apk", "--debug", "--target-platform", "android-arm64", "--split-per-abi")
     return verify_apk()
 
