@@ -26,11 +26,10 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
         total_uncompressed = 0
         for info in archive.infolist():
             name = Path(info.filename).name
-            # Reject unrelated images in the private ZIP before extracting any files.
+            # Reject every unrelated archive entry, including documents and
+            # hidden files. Only the 22 named JPEGs may enter this private build.
             if not PATTERN.fullmatch(name):
-                if not info.is_dir() and name.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".heic")):
-                    raise ValueError("Unexpected image in private pilot archive")
-                continue
+                raise ValueError(f"Unexpected entry in private pilot archive: {info.filename}")
             # Never accept ambiguous archive paths or encrypted image entries.
             parts = info.filename.replace("\\", "/").split("/")
             if (info.filename.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", info.filename)
