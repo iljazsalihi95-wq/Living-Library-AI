@@ -28,6 +28,18 @@ class ReadingProgress {
     return null;
   }
 
+  /// Find the final readable paragraph, skipping empty trailing chapters.
+  /// Useful for resuming a finished book without creating an invalid bookmark.
+  static ReadingProgress? lastIn(Book book) {
+    for (var chapter = book.chapters.length - 1; chapter >= 0; chapter--) {
+      final paragraphs = book.chapters[chapter].paragraphs;
+      if (paragraphs.isNotEmpty) {
+        return ReadingProgress(bookId: book.id, chapterIndex: chapter, paragraphIndex: paragraphs.length - 1);
+      }
+    }
+    return null;
+  }
+
   /// Move to the next paragraph, including the first paragraph of the next
   /// non-empty chapter. Never return a bookmark outside the book.
   ReadingProgress? nextIn(Book book) {
