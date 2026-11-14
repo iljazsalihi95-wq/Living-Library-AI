@@ -36,7 +36,7 @@ class PrivateApkVerificationTests(unittest.TestCase):
                     b"\xff\xd8changed\xff\xd9" if number == changed_frame else b"\xff\xd8synthetic\xff\xd9",
                 )
             if arm64:
-                archive.writestr("lib/arm64-v8a/libflutter.so", b"\x7fELF\x02\x01\x01" + b"\x00" * 11 + b"\x03\x00\xb7\x00" + b"\x00" * 40)
+                archive.writestr("lib/arm64-v8a/libflutter.so", b"\x7fELF\x02\x01\x01" + b"\x00" * 9 + b"\x03\x00\xb7\x00" + b"\x00" * 40)
 
     def test_valid_package_passes(self):
         self.make_apk()
