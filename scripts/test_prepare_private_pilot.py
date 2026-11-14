@@ -12,6 +12,11 @@ pilot = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pilot)
 
 
+def synthetic_jpeg(i: int) -> bytes:
+    """Distinct, sufficiently sized synthetic bytes for packaging checks only."""
+    return b"\xff\xd8" + (f"synthetic-frame-{i:02d}".encode() * 12) + b"\xff\xd9"
+
+
 class PrivatePilotTest(unittest.TestCase):
     def test_complete_archive_and_pubspec(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -20,7 +25,7 @@ class PrivatePilotTest(unittest.TestCase):
             archive = root / "frames.zip"
             with zipfile.ZipFile(archive, "w") as z:
                 for i in range(1, 23):
-                    z.writestr(f"assets/story/frame_{i:02d}.jpg", b"\xff\xd8" + str(i).encode() + b"\xff\xd9")
+                    z.writestr(f"frame_{i:02d}.jpg", synthetic_jpeg(i))
             with patch.object(pilot, "ROOT", root), patch.object(pilot.subprocess, "run", return_value=Mock(stdout="")):
                 self.assertEqual(pilot.prepare(archive), 22)
                 self.assertEqual(len(list((root / "assets/story").glob("*.jpg"))), 22)
@@ -35,7 +40,7 @@ class PrivatePilotTest(unittest.TestCase):
             archive = root / "frames.zip"
             with zipfile.ZipFile(archive, "w") as z:
                 for i in range(1, 23):
-                    z.writestr(f"frame_{i:02d}.jpg", b"\xff\xd8" + str(i).encode() + b"\xff\xd9")
+                    z.writestr(f"frame_{i:02d}.jpg", synthetic_jpeg(i))
             with patch.object(pilot, "ROOT", root):
                 self.assertEqual(pilot.prepare(archive, check_only=True), 22)
             self.assertEqual(manifest.read_text(), original)
@@ -48,7 +53,7 @@ class PrivatePilotTest(unittest.TestCase):
             archive = root / "frames.zip"
             with zipfile.ZipFile(archive, "w") as z:
                 for i in range(1, 23):
-                    z.writestr(f"frame_{i:02d}.jpg", b"\xff\xd8same\xff\xd9")
+                    z.writestr(f"frame_{i:02d}.jpg", synthetic_jpeg(1))
             with patch.object(pilot, "ROOT", root):
                 with self.assertRaisesRegex(ValueError, "duplicate JPEG content"):
                     pilot.prepare(archive)
