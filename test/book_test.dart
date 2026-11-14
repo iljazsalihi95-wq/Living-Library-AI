@@ -38,6 +38,18 @@ void main() {
       expect(scene.characterIds.every(characterIds.contains), isTrue, reason: scene.id);
     }
   });
+  test('First reading position skips empty introductory chapters', () {
+    const book = Book(id: 'start', title: 'Book', language: 'sq', chapters: [
+      Chapter(title: 'Cover', paragraphs: []),
+      Chapter(title: 'Introduction', paragraphs: ['Përshëndetje']),
+    ]);
+    final first = ReadingProgress.firstIn(book);
+    expect(first?.chapterIndex, 1);
+    expect(first?.paragraphIndex, 0);
+    expect(first?.isValidFor(book), isTrue);
+    const empty = Book(id: 'empty', title: 'Empty', language: 'sq', chapters: [Chapter(title: 'Cover', paragraphs: [])]);
+    expect(ReadingProgress.firstIn(empty), isNull);
+  });
   test('Reading progress skips empty chapters and stops at the end', () {
     const book = Book(id: 'reading', title: 'Test', language: 'sq', chapters: [
       Chapter(title: 'First', paragraphs: ['A', 'B']),
