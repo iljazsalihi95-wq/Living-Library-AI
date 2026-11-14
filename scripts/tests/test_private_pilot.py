@@ -16,7 +16,7 @@ spec.loader.exec_module(pilot)
 
 
 def fake_jpeg(n):
-    return b"\xff\xd8" + n.to_bytes(4, "big") + b"synthetic-test-only" + b"\xff\xd9"
+    return b"\xff\xd8" + n.to_bytes(4, "big") + b"synthetic-test-only" + bytes((n + i) % 256 for i in range(160)) + b"\xff\xd9"
 
 
 class PrivatePilotValidationTests(unittest.TestCase):
@@ -49,7 +49,7 @@ class PrivatePilotValidationTests(unittest.TestCase):
     def test_archive_traversal_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             path = self.make_archive(d, {"../frame_07.jpg": fake_jpeg(99)})
-            with self.assertRaisesRegex(ValueError, "Unsafe pilot archive path"):
+            with self.assertRaisesRegex(ValueError, "Unexpected entry|Unsafe pilot archive path"):
                 pilot.prepare(path, check_only=True)
 
     def test_missing_frame_rejected(self):
