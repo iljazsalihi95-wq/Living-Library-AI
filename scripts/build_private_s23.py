@@ -130,15 +130,16 @@ def build(zip_path):
         )
         if tracked_zip.returncode == 0:
             raise RuntimeError("Private pilot ZIP is tracked by Git; untrack it before building")
-    # Never mistake an APK from an earlier run for the output of this build.
-    if APK.exists():
-        APK.unlink()
     # Import the validated private asset preparation script.
     sys.path.insert(0, str(ROOT / "scripts"))
     from prepare_private_pilot import prepare
     # Validate the complete archive before writing any private files locally.
     if prepare(zip_path, check_only=True) != 22:
         raise RuntimeError("Private pilot archive did not contain 22 valid images")
+    # Preserve the last working APK if the supplied ZIP fails validation.
+    # Only discard stale output once the private input has passed preflight.
+    if APK.exists():
+        APK.unlink()
     if prepare(zip_path) != 22:
         raise RuntimeError("Private pilot import did not complete")
     run("flutter", "pub", "get")
