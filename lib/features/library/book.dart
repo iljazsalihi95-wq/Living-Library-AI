@@ -17,6 +17,17 @@ class ReadingProgress {
   final int paragraphIndex;
   bool get isValid => chapterIndex >= 0 && paragraphIndex >= 0;
 
+  /// Find the first readable paragraph even when introductory chapters are empty.
+  /// Returns null for books with no paragraphs, avoiding an invalid bookmark.
+  static ReadingProgress? firstIn(Book book) {
+    for (var chapter = 0; chapter < book.chapters.length; chapter++) {
+      if (book.chapters[chapter].paragraphs.isNotEmpty) {
+        return ReadingProgress(bookId: book.id, chapterIndex: chapter, paragraphIndex: 0);
+      }
+    }
+    return null;
+  }
+
   /// Move to the next paragraph, including the first paragraph of the next
   /// non-empty chapter. Never return a bookmark outside the book.
   ReadingProgress? nextIn(Book book) {
