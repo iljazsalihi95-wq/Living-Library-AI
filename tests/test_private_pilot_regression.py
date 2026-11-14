@@ -13,7 +13,7 @@ spec.loader.exec_module(pilot)
 
 # Synthetic byte sequences, never real photographs. The validator only checks JPEG markers.
 def jpeg(i):
-    return b"\xff\xd8" + f"synthetic-test-{i:02d}".encode() + b"\xff\xd9"
+    return b"\xff\xd8" + f"synthetic-test-{i:02d}".encode().ljust(128, b"x") + b"\xff\xd9"
 
 def make_zip(path, overrides=None):
     entries = {f"frame_{i:02d}.jpg": jpeg(i) for i in range(1, 23)}
