@@ -33,6 +33,22 @@ class ReadingProgress {
     return null;
   }
 
+  /// Navigate backwards across chapters, skipping chapters without paragraphs.
+  /// Returns null at the start of the book or for a stale bookmark.
+  ReadingProgress? previousIn(Book book) {
+    if (!isValidFor(book)) return null;
+    if (paragraphIndex > 0) {
+      return ReadingProgress(bookId: bookId, chapterIndex: chapterIndex, paragraphIndex: paragraphIndex - 1);
+    }
+    for (var previousChapter = chapterIndex - 1; previousChapter >= 0; previousChapter--) {
+      final paragraphs = book.chapters[previousChapter].paragraphs;
+      if (paragraphs.isNotEmpty) {
+        return ReadingProgress(bookId: bookId, chapterIndex: previousChapter, paragraphIndex: paragraphs.length - 1);
+      }
+    }
+    return null;
+  }
+
   /// Reject stale bookmarks pointing outside the current book contents.
   bool isValidFor(Book book) {
     if (!isValid || bookId != book.id || chapterIndex >= book.chapters.length) {
