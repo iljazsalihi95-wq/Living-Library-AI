@@ -61,6 +61,20 @@ class ReadingProgress {
     return firstIn(book);
   }
 
+  /// Fraction of readable paragraphs reached (0.0 to 1.0), suitable for
+  /// the reader progress bar. Invalid or foreign bookmarks return null.
+  double? fractionIn(Book book) {
+    if (!isValidFor(book)) return null;
+    var total = 0;
+    var reached = 0;
+    for (var chapter = 0; chapter < book.chapters.length; chapter++) {
+      final count = book.chapters[chapter].paragraphs.length;
+      total += count;
+      if (chapter < chapterIndex) reached += count;
+    }
+    return total == 0 ? null : (reached + paragraphIndex + 1) / total;
+  }
+
   /// Move to the next paragraph, including the first paragraph of the next
   /// non-empty chapter. Never return a bookmark outside the book.
   ReadingProgress? nextIn(Book book) {
