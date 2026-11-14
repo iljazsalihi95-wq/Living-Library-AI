@@ -146,10 +146,28 @@ def build(zip_path):
     run("flutter", "pub", "get")
     run("flutter", "analyze")
     run("flutter", "test")
-    if APK.exists():
-        APK.unlink()
-    run("flutter", "build", "apk", "--debug", "--target-platform", "android-arm64", "--split-per-abi")
-    return verify_apk()
+    # Preserve the previous installer until the new one passes verification.
+    # Flutter may overwrite or partially write the target before failing.
+    backup = APK.with_name(APK.name + ".previous")
+    if backup.exists():
+        raise RuntimeError(f"Refusing to overwrite an existing APK backup: {backup}")
+    had_previous = APK.is_file()
+    if had_previous:
+        APK.replace(backup)
+    try:
+        run("flutter", "build", "apk", "--debug", "--target-platform", "android-arm64", "--split-per-abi")
+        checksum = verify_apk()
+    except Exception:
+        # Never leave a failed/partial installer in the expected output path.
+        if APK.exists():
+            APK.unlink()
+        if had_previous:
+            backup.replace(APK)
+        raise
+    else:
+        if had_previous:
+            backup.unlink()
+        return checksum
 
 
 if __name__ == "__main__":
