@@ -170,7 +170,7 @@ class _LibraryHomeState extends State<LibraryHome> {
               final text = await page.loadText();
               if (text != null && text.fullText.trim().isNotEmpty) {
                 final section = '## Faqja ${page.pageNumber}\n\n${text.fullText}';
-                extractedCharacters += section.length;
+                extractedCharacters += utf8.encode(section).length + (pages.isEmpty ? 0 : 2);
                 if (extractedCharacters > 10 * 1024 * 1024) {
                   throw const FormatException('Teksti i PDF-së është tepër i madh. Ndaje librin në pjesë më të vogla.');
                 }
