@@ -98,4 +98,20 @@ void main() {
     expect(ReadingProgress.lastIn(empty), isNull);
   });
 
+  test('Recover stale bookmarks without crossing book identities', () {
+    const book = Book(id: 'edited', title: 'Edited', language: 'sq', chapters: [
+      Chapter(title: 'Intro', paragraphs: []),
+      Chapter(title: 'Text', paragraphs: ['A', 'B']),
+      Chapter(title: 'Removed', paragraphs: []),
+    ]);
+    const stale = ReadingProgress(bookId: 'edited', chapterIndex: 5, paragraphIndex: 9);
+    final recovered = stale.recoverIn(book);
+    expect(recovered?.chapterIndex, 1);
+    expect(recovered?.paragraphIndex, 1);
+    expect(recovered?.isValidFor(book), isTrue);
+    expect(const ReadingProgress(bookId: 'other', chapterIndex: 5, paragraphIndex: 9).recoverIn(book), isNull);
+    expect(const ReadingProgress(bookId: 'edited', chapterIndex: -1, paragraphIndex: 0).recoverIn(book), isNull);
+    expect(const ReadingProgress(bookId: 'edited', chapterIndex: 0, paragraphIndex: 0).recoverIn(book)?.chapterIndex, 1);
+  });
+
 }
