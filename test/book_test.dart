@@ -114,4 +114,17 @@ void main() {
     expect(const ReadingProgress(bookId: 'edited', chapterIndex: 0, paragraphIndex: 0).recoverIn(book)?.chapterIndex, 1);
   });
 
+  test('Reading progress fraction counts paragraphs, not empty chapters', () {
+    const book = Book(id: 'fraction', title: 'Book', language: 'sq', chapters: [
+      Chapter(title: 'Cover', paragraphs: []),
+      Chapter(title: 'Part one', paragraphs: ['A', 'B']),
+      Chapter(title: 'Empty', paragraphs: []),
+      Chapter(title: 'Part two', paragraphs: ['C', 'D']),
+    ]);
+    expect(const ReadingProgress(bookId: 'fraction', chapterIndex: 1, paragraphIndex: 0).fractionIn(book), 0.25);
+    expect(const ReadingProgress(bookId: 'fraction', chapterIndex: 3, paragraphIndex: 0).fractionIn(book), 0.75);
+    expect(const ReadingProgress(bookId: 'fraction', chapterIndex: 3, paragraphIndex: 1).fractionIn(book), 1.0);
+    expect(const ReadingProgress(bookId: 'other', chapterIndex: 3, paragraphIndex: 1).fractionIn(book), isNull);
+  });
+
 }
