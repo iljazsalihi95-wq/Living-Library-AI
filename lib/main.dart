@@ -186,6 +186,7 @@ class _LibraryHomeState extends State<LibraryHome> {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Importimi nuk përfundoi. Kontrollo formatin dhe madhësinë e skedarit.')));
         return;
       }
+      if (utf8.encode(content).length > 10 * 1024 * 1024) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Teksti i nxjerrë tejkalon 10 MB. Ndaje librin në pjesë më të vogla.'))); return; }
       if (content.trim().isEmpty) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skedari nuk ka tekst për lexim.'))); return; }
       final prefs = await SharedPreferences.getInstance();
       late final List<Map<String, dynamic>> library;
