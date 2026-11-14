@@ -127,4 +127,22 @@ void main() {
     expect(const ReadingProgress(bookId: 'other', chapterIndex: 3, paragraphIndex: 1).fractionIn(book), isNull);
   });
 
+  test('Reader slider jumps across empty chapters and validates fractions', () {
+    const book = Book(id: 'seek', title: 'Book', language: 'sq', chapters: [
+      Chapter(title: 'Cover', paragraphs: []),
+      Chapter(title: 'One', paragraphs: ['A', 'B']),
+      Chapter(title: 'Blank', paragraphs: []),
+      Chapter(title: 'Two', paragraphs: ['C', 'D']),
+    ]);
+    expect(ReadingProgress.atFraction(book, 0)?.chapterIndex, 1);
+    expect(ReadingProgress.atFraction(book, 0.25)?.paragraphIndex, 0);
+    expect(ReadingProgress.atFraction(book, 0.75)?.chapterIndex, 3);
+    expect(ReadingProgress.atFraction(book, 1)?.paragraphIndex, 1);
+    expect(ReadingProgress.atFraction(book, -0.1), isNull);
+    expect(ReadingProgress.atFraction(book, double.nan), isNull);
+    expect(ReadingProgress.atFraction(book, double.infinity), isNull);
+    const empty = Book(id: 'empty', title: 'Empty', language: 'sq', chapters: []);
+    expect(ReadingProgress.atFraction(empty, 0.5), isNull);
+  });
+
 }
