@@ -22,4 +22,16 @@ void main() {
     expect(find.text('Biblioteka ime'), findsWidgets);
     expect(find.textContaining('Nuk ka ende draft të ruajtur'), findsOneWidget);
   });
+  testWidgets('Studio AI navigation opens the story creation workspace', (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await tester.pumpWidget(const LibraryApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Studio AI'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Studio AI'), findsWidgets);
+    expect(find.byType(LibraryHome), findsNothing);
+  });
+
 }
