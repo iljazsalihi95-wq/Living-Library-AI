@@ -14,6 +14,16 @@ void main() {
     expect(const ReadingProgress(bookId: 'other', chapterIndex: 0, paragraphIndex: 0).isValidFor(book), isFalse);
   });
 
+  test('Restored reading bookmarks compare by value and remain book-specific', () {
+    const saved = ReadingProgress(bookId: 'book-a', chapterIndex: 2, paragraphIndex: 3);
+    const restored = ReadingProgress(bookId: 'book-a', chapterIndex: 2, paragraphIndex: 3);
+    const otherBook = ReadingProgress(bookId: 'book-b', chapterIndex: 2, paragraphIndex: 3);
+    expect(saved, restored);
+    expect(saved.hashCode, restored.hashCode);
+    expect({saved, restored}, hasLength(1));
+    expect(saved, isNot(otherBook));
+  });
+
   test('Film scene keeps ordered approved reference frames', () {
     const scene = FilmScene(id: 'p01', title: 'Skena', storyText: 'Ngjarja', motionInstructions: 'Lëvizje', referenceImagePaths: ['frame-01.jpg', 'frame-02.jpg']);
     expect(scene.referenceImagePath, 'frame-01.jpg');
