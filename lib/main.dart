@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'features/ai_film/pilot_story.dart';
@@ -866,6 +867,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
         IconButton(tooltip: 'Gjetja tjetër', onPressed: matches.isEmpty ? null : () => _jump(matches.firstWhere((i) => i > current, orElse: () => matches.first)), icon: const Icon(Icons.navigate_next)),
         IconButton(tooltip: 'Shënues', onPressed: () { setState(() => bookmarks.contains(current) ? bookmarks.remove(current) : bookmarks.add(current)); _save(); }, icon: Icon(bookmarks.contains(current) ? Icons.bookmark : Icons.bookmark_border)),
         IconButton(tooltip: 'Shënim personal', onPressed: _note, icon: const Icon(Icons.edit_note)),
+         IconButton(tooltip: 'Kopjo pjesën aktuale', onPressed: paragraphs.isEmpty ? null : () async { await Clipboard.setData(ClipboardData(text: paragraphs[current])); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pjesa u kopjua.'))); }, icon: const Icon(Icons.copy_outlined)),
         PopupMenuButton<String>(tooltip: 'AI për pjesën e zgjedhur', enabled: !aiBusy, onSelected: _ai, itemBuilder: (_) => const [PopupMenuItem(value: 'translate', child: Text('Përkthe pjesën')), PopupMenuItem(value: 'explain', child: Text('Shpjego pjesën'))]),
       ]),
       if (aiBusy) const LinearProgressIndicator(),
