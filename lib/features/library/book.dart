@@ -17,6 +17,19 @@ class ReadingProgress {
   final int paragraphIndex;
   bool get isValid => chapterIndex >= 0 && paragraphIndex >= 0;
 
+  /// Bookmarks are value objects: identical positions compare equally when
+  /// restoring saved reading progress or deduplicating reader updates.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReadingProgress &&
+          other.bookId == bookId &&
+          other.chapterIndex == chapterIndex &&
+          other.paragraphIndex == paragraphIndex;
+
+  @override
+  int get hashCode => Object.hash(bookId, chapterIndex, paragraphIndex);
+
   /// Find the first readable paragraph even when introductory chapters are empty.
   /// Returns null for books with no paragraphs, avoiding an invalid bookmark.
   static ReadingProgress? firstIn(Book book) {
