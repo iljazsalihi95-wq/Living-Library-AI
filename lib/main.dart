@@ -878,13 +878,26 @@ class _TextReaderPageState extends State<_TextReaderPage> {
         IconButton(tooltip: 'Gjetja e mëparshme', onPressed: matches.isEmpty ? null : () => _jump(matches.lastWhere((i) => i < current, orElse: () => matches.last)), icon: const Icon(Icons.navigate_before)),
         Text('${paragraphs.isEmpty ? 0 : current + 1}/${paragraphs.length}'),
         IconButton(tooltip: 'Gjetja tjetër', onPressed: matches.isEmpty ? null : () => _jump(matches.firstWhere((i) => i > current, orElse: () => matches.first)), icon: const Icon(Icons.navigate_next)),
+         IconButton(tooltip: 'Pjesa e mëparshme', onPressed: current > 0 ? () => _jump(current - 1) : null, icon: const Icon(Icons.arrow_upward_rounded)),
          IconButton(tooltip: 'Pjesa tjetër', onPressed: current + 1 < paragraphs.length ? () => _jump(current + 1) : null, icon: const Icon(Icons.arrow_downward_rounded)),
         IconButton(tooltip: 'Shënues', onPressed: () { setState(() => bookmarks.contains(current) ? bookmarks.remove(current) : bookmarks.add(current)); _save(); }, icon: Icon(bookmarks.contains(current) ? Icons.bookmark : Icons.bookmark_border)),
         IconButton(tooltip: 'Shënim personal', onPressed: _note, icon: const Icon(Icons.edit_note)),
          IconButton(tooltip: 'Kopjo pjesën aktuale', onPressed: paragraphs.isEmpty ? null : () async { await Clipboard.setData(ClipboardData(text: paragraphs[current])); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pjesa u kopjua.'))); }, icon: const Icon(Icons.copy_outlined)),
         PopupMenuButton<String>(tooltip: 'AI për pjesën e zgjedhur', enabled: !aiBusy, onSelected: _ai, itemBuilder: (_) => const [PopupMenuItem(value: 'translate', child: Text('Përkthe pjesën')), PopupMenuItem(value: 'explain', child: Text('Shpjego pjesën'))]),
       ]),
-      if (aiBusy) const LinearProgressIndicator(),
+      if (paragraphs.length > 1)
+         Padding(
+           padding: const EdgeInsets.symmetric(horizontal: 14),
+           child: Slider(
+             value: current.toDouble().clamp(0.0, (paragraphs.length - 1).toDouble()),
+             min: 0,
+             max: (paragraphs.length - 1).toDouble(),
+             divisions: paragraphs.length <= 1000 ? paragraphs.length - 1 : null,
+             label: 'Pjesa ${current + 1} / ${paragraphs.length}',
+             onChanged: (value) => _jump(value.round()),
+           ),
+         ),
+       if (aiBusy) const LinearProgressIndicator(),
       Row(children: [IconButton(tooltip: speaking || speechStarting ? 'Ndalo' : 'Lexo me zë nga kjo pjesë', onPressed: _toggleSpeech, icon: Icon(speaking || speechStarting ? Icons.stop_circle : Icons.volume_up)), DropdownButton<String>(value: language, onChanged: speaking || speechStarting ? null : (v) => setState(() => language = v!), items: const [DropdownMenuItem(value: 'sq-AL', child: Text('SQ')), DropdownMenuItem(value: 'de-DE', child: Text('DE')), DropdownMenuItem(value: 'en-US', child: Text('EN')), DropdownMenuItem(value: 'ar', child: Text('AR')), DropdownMenuItem(value: 'tr-TR', child: Text('TR'))]), Expanded(child: Slider(value: speechRate, min: .2, max: .8, onChanged: (v) { setState(() => speechRate = v); _tts.setSpeechRate(v); }))]),
       Expanded(child: SelectionArea(child: SingleChildScrollView(controller: scroll, padding: const EdgeInsets.all(20), child: Column(children: [for (var i = 0; i < paragraphs.length; i++) GestureDetector(key: keys[i], onTap: () { if (!speaking) _jump(i); }, child: Container(width: double.infinity, padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 10), decoration: BoxDecoration(color: current == i ? panel : Colors.transparent, borderRadius: BorderRadius.circular(12), border: current == i ? Border.all(color: gold.withValues(alpha: .4)) : null), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_text(i), if ((notes['$i'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(notes['$i']!, style: const TextStyle(color: gold, fontSize: 13)))])))]))))
     ]),
