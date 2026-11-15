@@ -66,6 +66,29 @@ class PrivateApkVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "differs"):
             self.verify()
 
+    def test_duplicate_zip_entry_rejected(self):
+        self.make_apk()
+        with zipfile.ZipFile(self.apk, "a") as archive:
+            with self.assertWarns(UserWarning):
+                archive.writestr(
+                    "assets/flutter_assets/assets/story/frame_01.jpg",
+                    self.images["frame_01.jpg"],
+                )
+        with self.assertRaisesRegex(RuntimeError, "duplicate ZIP entries"):
+            self.verify()
+
+    def test_missing_arm64_runtime_rejected(self):
+        with zipfile.ZipFile(self.apk, "w") as archive:
+            for name, data in self.images.items():
+                archive.writestr("assets/flutter_assets/assets/story/" + name, data)
+        with self.assertRaisesRegex(RuntimeError, "no arm64 Flutter runtime"):
+            self.verify()
+
+    def test_empty_apk_rejected(self):
+        self.apk.write_bytes(b"")
+        with self.assertRaisesRegex(RuntimeError, "missing or empty"):
+            self.verify()
+
     def test_wrong_cpu_architecture_rejected(self):
         self.make_apk()
         with zipfile.ZipFile(self.apk, "r") as archive:
