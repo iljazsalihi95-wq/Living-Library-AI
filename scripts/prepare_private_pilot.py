@@ -118,12 +118,30 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
     original = pubspec.read_text(encoding="utf-8")
     updated = original
     if "    - assets/story/" not in original:
-        if "flutter:\n  uses-material-design: true" not in original:
-            raise ValueError("Unknown pubspec layout")
-        updated = original.replace(
-            "flutter:\n  uses-material-design: true",
-            "flutter:\n  uses-material-design: true\n  assets:\n    - assets/story/",
+        # Reuse an existing Flutter assets list instead of creating a second
+        # YAML 'assets:' key, which would invalidate the manifest.
+        flutter_lines = original.splitlines(keepends=True)
+        flutter_index = next(
+            (i for i, line in enumerate(flutter_lines) if line.strip() == "flutter:" and line.startswith("flutter:")),
+            None,
         )
+        if flutter_index is None:
+            raise ValueError("Missing top-level Flutter configuration")
+        section_end = next(
+            (i for i in range(flutter_index + 1, len(flutter_lines))
+             if flutter_lines[i].strip() and not flutter_lines[i].startswith((" ", "#", "\\t"))),
+            len(flutter_lines),
+        )
+        assets_index = next(
+            (i for i in range(flutter_index + 1, section_end)
+             if flutter_lines[i].startswith("  assets:")),
+            None,
+        )
+        if assets_index is not None:
+            flutter_lines.insert(assets_index + 1, "    - assets/story/\n")
+        else:
+            flutter_lines.insert(section_end, "  assets:\n    - assets/story/\n")
+        updated = "".join(flutter_lines)
     target.mkdir(parents=True, exist_ok=True)
     if updated != original:
         pubspec.write_text(updated, encoding="utf-8")
