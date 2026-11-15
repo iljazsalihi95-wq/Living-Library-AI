@@ -64,3 +64,9 @@ key.properties
 **/exports/
 *.srt.bak
 *.vtt.bak
+
+# Denylist every owner-supplied story asset, regardless of filename/extension.
+# This also protects renamed photos and local pilot archives from git add -A.
+/assets/story/*
+!/assets/story/.gitkeep
+/Living_Library_22_Fotografite_Assets.zip
