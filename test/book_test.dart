@@ -20,7 +20,10 @@ void main() {
     const otherBook = ReadingProgress(bookId: 'book-b', chapterIndex: 2, paragraphIndex: 3);
     expect(saved, restored);
     expect(saved.hashCode, restored.hashCode);
-    expect({saved, restored}, hasLength(1));
+    final restoredBookmarks = <ReadingProgress>{};
+    restoredBookmarks.add(saved);
+    restoredBookmarks.add(restored);
+    expect(restoredBookmarks, hasLength(1));
     expect(saved, isNot(otherBook));
   });
 
