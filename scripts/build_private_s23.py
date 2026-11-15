@@ -73,6 +73,11 @@ def verify_apk():
                 matches = sha256_stream(bundled_stream) == sha256_stream(local_stream)
             if not matches:
                 raise RuntimeError(f"APK pilot image differs from local source: {name}")
+        # The S23 installer must be a split ARM64 APK, not a multi-ABI package.
+        foreign_abis = sorted(name for name in names if name.startswith("lib/")
+                              and not name.startswith("lib/arm64-v8a/"))
+        if foreign_abis:
+            raise RuntimeError(f"APK contains non-arm64 native libraries: {foreign_abis}")
         runtime = "lib/arm64-v8a/libflutter.so"
         if runtime not in names:
             raise RuntimeError("APK has no arm64 Flutter runtime")
