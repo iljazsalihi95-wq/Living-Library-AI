@@ -28,6 +28,15 @@ class LibraryApp extends StatelessWidget {
         theme: ThemeData(
           brightness: Brightness.dark,
           scaffoldBackgroundColor: emerald,
+
+          snackBarTheme: SnackBarThemeData(
+            backgroundColor: const Color(0xFF0D2A24),
+            contentTextStyle: const TextStyle(color: Color(0xFFF4F0E7), fontWeight: FontWeight.w500),
+            actionTextColor: const Color(0xFFE2BE72),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 8,
+          ),
           colorScheme: ColorScheme.fromSeed(seedColor: gold, brightness: Brightness.dark),
           textSelectionTheme: TextSelectionThemeData(
             cursorColor: gold,
