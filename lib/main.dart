@@ -670,9 +670,22 @@ class _WritingPage extends StatefulWidget {
 class _WritingPageState extends State<_WritingPage> {
   final titleController = TextEditingController();
   final textController = TextEditingController();
+  Timer? draftSaveTimer;
+  bool loadingDraft = true;
+  void _scheduleDraftSave() {
+    if (loadingDraft) return;
+    draftSaveTimer?.cancel();
+    draftSaveTimer = Timer(const Duration(seconds: 2), () async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('book_draft_title', titleController.text);
+        await prefs.setString('book_draft_text', textController.text);
+      } catch (_) { /* Manual save remains available. */ }
+    });
+  }
   @override
-  void initState() { super.initState(); _loadDraft(); }
-  Future<void> _loadDraft() async { final prefs = await SharedPreferences.getInstance(); if (!mounted) return; titleController.text = prefs.getString('book_draft_title') ?? ''; textController.text = prefs.getString('book_draft_text') ?? ''; }
+  void initState() { super.initState(); titleController.addListener(_scheduleDraftSave); textController.addListener(_scheduleDraftSave); _loadDraft(); }
+  Future<void> _loadDraft() async { try { final prefs = await SharedPreferences.getInstance(); if (!mounted) return; titleController.text = prefs.getString('book_draft_title') ?? ''; textController.text = prefs.getString('book_draft_text') ?? ''; } finally { loadingDraft = false; } }
   Future<void> _saveDraft() async { final prefs = await SharedPreferences.getInstance(); await prefs.setString('book_draft_title', titleController.text); await prefs.setString('book_draft_text', textController.text); if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Drafti u ruajt në këtë pajisje.'))); }
   Future<void> _exportDraft({required bool markdown}) async {
     final title = titleController.text.trim();
@@ -698,7 +711,7 @@ class _WritingPageState extends State<_WritingPage> {
     }
   }
   @override
-  void dispose() { titleController.dispose(); textController.dispose(); super.dispose(); }
+  void dispose() { draftSaveTimer?.cancel(); final title = titleController.text; final body = textController.text; if (!loadingDraft) { SharedPreferences.getInstance().then((prefs) async { await prefs.setString('book_draft_title', title); await prefs.setString('book_draft_text', body); }); } titleController.dispose(); textController.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Shkruaj librin tim'), actions: [PopupMenuButton<bool>(tooltip: 'Eksporto librin', onSelected: (markdown) => _exportDraft(markdown: markdown), itemBuilder: (_) => const [PopupMenuItem(value: false, child: Text('Eksporto TXT')), PopupMenuItem(value: true, child: Text('Eksporto Markdown'))])]), body: Padding(padding: const EdgeInsets.all(20), child: Column(children: [TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Titulli', border: OutlineInputBorder())), const SizedBox(height: 14), Expanded(child: TextField(controller: textController, expands: true, maxLines: null, minLines: null, textAlignVertical: TextAlignVertical.top, decoration: const InputDecoration(labelText: 'Teksti i librit', alignLabelWithHint: true, border: OutlineInputBorder()))), const SizedBox(height: 12), SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _saveDraft, icon: const Icon(Icons.save_outlined), label: const Text('Ruaj draftin')))])));
 }
