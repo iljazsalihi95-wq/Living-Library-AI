@@ -126,6 +126,8 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
     )
     if flutter_index is None:
         raise ValueError("Missing top-level Flutter configuration")
+    if sum(line.rstrip() == "flutter:" for line in flutter_lines) != 1:
+        raise ValueError("Ambiguous Flutter manifest: multiple top-level flutter blocks")
     section_end = next(
         (i for i in range(flutter_index + 1, len(flutter_lines))
          if flutter_lines[i].strip()
@@ -136,6 +138,8 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
         (i for i in range(flutter_index + 1, section_end)
          if flutter_lines[i].startswith("  assets:")), None,
     )
+    if sum(line.startswith("  assets:") for line in flutter_lines[flutter_index + 1:section_end]) > 1:
+        raise ValueError("Ambiguous Flutter manifest: multiple assets blocks")
     # Only a real list entry within the Flutter assets subsection counts.
     asset_end = section_end if assets_index is None else next(
         (i for i in range(assets_index + 1, section_end)
