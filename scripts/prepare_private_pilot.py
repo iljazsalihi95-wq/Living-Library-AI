@@ -104,6 +104,13 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
                 "Private pilot import refused: unexpected story images already exist: "
                 + ", ".join(unexpected)
             )
+        # Preserve previous private imports rather than silently overwriting them.
+        existing = sorted(item.name for item in target.iterdir())
+        if existing:
+            raise ValueError(
+                "Private pilot import refused: existing private frames must be "
+                "backed up and cleared manually before re-import (no files written)"
+            )
     # Validate the manifest and destination before writing anything.
     pubspec = ROOT / "pubspec.yaml"
     if pubspec.is_symlink():
