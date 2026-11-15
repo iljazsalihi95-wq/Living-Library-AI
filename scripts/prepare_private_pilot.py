@@ -151,6 +151,12 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
         line.strip() == "- assets/story/" and not line.lstrip().startswith("#")
         for line in flutter_lines[assets_index + 1:asset_end]
     )
+    if assets_index is not None:
+        # Inline YAML values (assets: [] / assets: null) cannot accept an
+        # indented list entry. Fail safely before writing private photographs.
+        declaration = flutter_lines[assets_index].split("#", 1)[0].strip()
+        if declaration != "assets:":
+            raise ValueError("Flutter assets must be a block list, not an inline value")
     if not registered:
         if assets_index is not None:
             flutter_lines.insert(assets_index + 1, "    - assets/story/\n")
