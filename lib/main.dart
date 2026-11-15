@@ -685,7 +685,22 @@ class _WritingPageState extends State<_WritingPage> {
   }
   @override
   void initState() { super.initState(); titleController.addListener(_scheduleDraftSave); textController.addListener(_scheduleDraftSave); _loadDraft(); }
-  Future<void> _loadDraft() async { try { final prefs = await SharedPreferences.getInstance(); if (!mounted) return; titleController.text = prefs.getString('book_draft_title') ?? ''; textController.text = prefs.getString('book_draft_text') ?? ''; } finally { loadingDraft = false; } }
+  Future<void> _loadDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      titleController.text = prefs.getString('book_draft_title') ?? '';
+      textController.text = prefs.getString('book_draft_text') ?? '';
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Drafti lokal nuk u lexua. Mund të shkruash dhe ta eksportosh librin.'),
+        ));
+      }
+    } finally {
+      loadingDraft = false;
+    }
+  }
   Future<void> _saveDraft() async { final prefs = await SharedPreferences.getInstance(); await prefs.setString('book_draft_title', titleController.text); await prefs.setString('book_draft_text', textController.text); if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Drafti u ruajt në këtë pajisje.'))); }
   Future<void> _clearDraft() async {
     final confirmed = await showDialog<bool>(
