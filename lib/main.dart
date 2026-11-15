@@ -43,6 +43,12 @@ class LibraryApp extends StatelessWidget {
             selectionColor: gold.withValues(alpha: 0.28),
             selectionHandleColor: gold,
           ),
+          scrollbarTheme: ScrollbarThemeData(
+            thumbVisibility: const WidgetStatePropertyAll<bool>(true),
+            thumbColor: WidgetStatePropertyAll<Color>(gold),
+            thickness: const WidgetStatePropertyAll<double>(4),
+            radius: const Radius.circular(8),
+          ),
           navigationBarTheme: NavigationBarThemeData(
             backgroundColor: panel,
             indicatorColor: gold.withValues(alpha: 0.20),
