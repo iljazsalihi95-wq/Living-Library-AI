@@ -30,7 +30,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // NavigationBar may hide unselected labels at compact device widths.
-    await tester.tap(find.byIcon(Icons.movie_creation_outlined));
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.byIcon(Icons.movie_creation_outlined),
+    ).first);
     await tester.pumpAndSettle();
 
     expect(find.byType(StoryStudio), findsOneWidget);
