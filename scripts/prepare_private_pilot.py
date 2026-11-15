@@ -142,11 +142,23 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
         else:
             flutter_lines.insert(section_end, "  assets:\n    - assets/story/\n")
         updated = "".join(flutter_lines)
+    # Write the manifest last: a failed image write must never leave Flutter
+    # configured to package an incomplete private pilot. Roll back only files
+    # created by this import; existing imports were rejected above.
     target.mkdir(parents=True, exist_ok=True)
-    if updated != original:
-        pubspec.write_text(updated, encoding="utf-8")
-    for name, data in sorted(frames.items()):
-        (target / name).write_bytes(data)
+    written = []
+    try:
+        for name, data in sorted(frames.items()):
+            destination = target / name
+            with destination.open("xb") as output:
+                written.append(destination)
+                output.write(data)
+        if updated != original:
+            pubspec.write_text(updated, encoding="utf-8")
+    except Exception:
+        for destination in written:
+            destination.unlink(missing_ok=True)
+        raise
     print("Private bundle ready: 22 JPEGs. Do not commit photos or pubspec.yaml.")
     return 22
 
