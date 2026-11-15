@@ -117,30 +117,41 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
         raise ValueError("Flutter manifest must not be a symlink")
     original = pubspec.read_text(encoding="utf-8")
     updated = original
-    if "    - assets/story/" not in original:
-        # Reuse an existing Flutter assets list instead of creating a second
-        # YAML 'assets:' key, which would invalidate the manifest.
-        flutter_lines = original.splitlines(keepends=True)
-        flutter_index = next(
-            (i for i, line in enumerate(flutter_lines) if line.strip() == "flutter:" and line.startswith("flutter:")),
-            None,
-        )
-        if flutter_index is None:
-            raise ValueError("Missing top-level Flutter configuration")
-        section_end = next(
-            (i for i in range(flutter_index + 1, len(flutter_lines))
-             if flutter_lines[i].strip() and not flutter_lines[i].startswith((" ", "#", "\\t"))),
-            len(flutter_lines),
-        )
-        assets_index = next(
-            (i for i in range(flutter_index + 1, section_end)
-             if flutter_lines[i].startswith("  assets:")),
-            None,
-        )
+    # Inspect only the actual top-level Flutter block, not commented examples
+    # or similarly named assets in another YAML section.
+    flutter_lines = original.splitlines(keepends=True)
+    flutter_index = next(
+        (i for i, line in enumerate(flutter_lines)
+         if line.rstrip() == "flutter:"), None,
+    )
+    if flutter_index is None:
+        raise ValueError("Missing top-level Flutter configuration")
+    section_end = next(
+        (i for i in range(flutter_index + 1, len(flutter_lines))
+         if flutter_lines[i].strip()
+         and not flutter_lines[i].startswith((" ", "#", "\\t"))),
+        len(flutter_lines),
+    )
+    assets_index = next(
+        (i for i in range(flutter_index + 1, section_end)
+         if flutter_lines[i].startswith("  assets:")), None,
+    )
+    # Only a real list entry within the Flutter assets subsection counts.
+    asset_end = section_end if assets_index is None else next(
+        (i for i in range(assets_index + 1, section_end)
+         if flutter_lines[i].strip()
+         and not flutter_lines[i].startswith(("    ", "#"))),
+        section_end,
+    )
+    registered = assets_index is not None and any(
+        line.strip() == "- assets/story/" and not line.lstrip().startswith("#")
+        for line in flutter_lines[assets_index + 1:asset_end]
+    )
+    if not registered:
         if assets_index is not None:
-            flutter_lines.insert(assets_index + 1, "    - assets/story/\n")
+            flutter_lines.insert(assets_index + 1, "    - assets/story/\\n")
         else:
-            flutter_lines.insert(section_end, "  assets:\n    - assets/story/\n")
+            flutter_lines.insert(section_end, "  assets:\\n    - assets/story/\\n")
         updated = "".join(flutter_lines)
     # Write the manifest last: a failed image write must never leave Flutter
     # configured to package an incomplete private pilot. Roll back only files
