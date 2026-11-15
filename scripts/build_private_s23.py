@@ -5,6 +5,7 @@ Usage: python3 scripts/build_private_s23.py /absolute/path/to/frames.zip
 Requires Flutter, Android SDK, and a local checkout of this repository.
 """
 import hashlib
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -114,6 +115,9 @@ def ensure_private_frames_untracked():
 def build(zip_path):
     if not zip_path.is_file():
         raise FileNotFoundError(zip_path)
+    # Fail before importing private photos when the local Android toolchain is missing.
+    if shutil.which("flutter") is None:
+        raise RuntimeError("Flutter SDK not found on PATH; private frames were not imported")
     ensure_private_frames_untracked()
     # A private ZIP must never be part of the tracked Git tree. Refuse a
     # tracked archive even when it is outside the conventional assets folder.
