@@ -865,6 +865,7 @@ class _TextReaderPageState extends State<_TextReaderPage> {
         IconButton(tooltip: 'Gjetja e mëparshme', onPressed: matches.isEmpty ? null : () => _jump(matches.lastWhere((i) => i < current, orElse: () => matches.last)), icon: const Icon(Icons.navigate_before)),
         Text('${paragraphs.isEmpty ? 0 : current + 1}/${paragraphs.length}'),
         IconButton(tooltip: 'Gjetja tjetër', onPressed: matches.isEmpty ? null : () => _jump(matches.firstWhere((i) => i > current, orElse: () => matches.first)), icon: const Icon(Icons.navigate_next)),
+         IconButton(tooltip: 'Pjesa tjetër', onPressed: current + 1 < paragraphs.length ? () => _jump(current + 1) : null, icon: const Icon(Icons.arrow_downward_rounded)),
         IconButton(tooltip: 'Shënues', onPressed: () { setState(() => bookmarks.contains(current) ? bookmarks.remove(current) : bookmarks.add(current)); _save(); }, icon: Icon(bookmarks.contains(current) ? Icons.bookmark : Icons.bookmark_border)),
         IconButton(tooltip: 'Shënim personal', onPressed: _note, icon: const Icon(Icons.edit_note)),
          IconButton(tooltip: 'Kopjo pjesën aktuale', onPressed: paragraphs.isEmpty ? null : () async { await Clipboard.setData(ClipboardData(text: paragraphs[current])); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pjesa u kopjua.'))); }, icon: const Icon(Icons.copy_outlined)),
