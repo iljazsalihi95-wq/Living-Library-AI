@@ -106,7 +106,7 @@ class PrivatePilotTest(unittest.TestCase):
                     z.writestr(f"frame_{i:02d}.jpg", synthetic_jpeg(i))
             with patch.object(pilot, "ROOT", root), patch.object(
                 pilot.subprocess, "run",
-                return_value=Mock(stdout="assets/story/frame_01.jpg\\n")
+                return_value=Mock(stdout="assets/story/frame_01.jpg\n")
             ):
                 with self.assertRaisesRegex(ValueError, "Git tracks pilot frames"):
                     pilot.prepare(archive)
