@@ -75,12 +75,6 @@ class LibraryApp extends StatelessWidget {
               borderSide: const BorderSide(color: Color(0xFFE2BE72), width: 1.5),
             ),
           ),
-          snackBarTheme: SnackBarThemeData(
-            backgroundColor: const Color(0xFF0D2A24),
-            contentTextStyle: const TextStyle(color: Colors.white),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: gold,
