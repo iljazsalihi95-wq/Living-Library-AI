@@ -77,6 +77,11 @@ class PrivateApkVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "duplicate ZIP entries"):
             self.verify()
 
+    def test_foreign_abi_library_rejected(self):
+        self.make_apk(extras={"lib/x86_64/libexample.so": b"not arm64"})
+        with self.assertRaisesRegex(RuntimeError, "non-arm64"):
+            self.verify()
+
     def test_missing_arm64_runtime_rejected(self):
         with zipfile.ZipFile(self.apk, "w") as archive:
             for name, data in self.images.items():
