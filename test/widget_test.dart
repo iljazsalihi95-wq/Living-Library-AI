@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:living_library_ai/features/ai_film/story_studio.dart';
 import 'package:living_library_ai/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,10 +29,11 @@ void main() {
     await tester.pumpWidget(const LibraryApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Studio AI'));
+    // NavigationBar may hide unselected labels at compact device widths.
+    await tester.tap(find.byIcon(Icons.movie_creation_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Studio AI'), findsWidgets);
+    expect(find.byType(StoryStudio), findsOneWidget);
     expect(find.byType(LibraryHome), findsNothing);
   });
 
