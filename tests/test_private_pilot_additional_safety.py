@@ -49,7 +49,7 @@ class PrivateZipAdditionalSafetyTests(unittest.TestCase):
             info.create_system = 3
             info.external_attr = (stat.S_IFLNK | 0o777) << 16
             archive.writestr(info, b"target")
-        with self.assertRaisesRegex(ValueError, "Symlink"):
+        with self.assertRaisesRegex(ValueError, "Symlink|Non-regular pilot frame"):
             self.validate(make_zip(symlink))
 
     def test_empty_frame_rejected(self):
