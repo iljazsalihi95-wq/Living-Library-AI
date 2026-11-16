@@ -127,6 +127,18 @@ void main() {
     expect(const ReadingProgress(bookId: 'edited', chapterIndex: 0, paragraphIndex: 0).recoverIn(book)?.chapterIndex, 1);
   });
 
+  test('Recovering an emptied chapter resumes forward instead of rereading old text', () {
+    const book = Book(id: 'updated', title: 'Updated', language: 'sq', chapters: [
+      Chapter(title: 'Previously read', paragraphs: ['A']),
+      Chapter(title: 'Removed content', paragraphs: []),
+      Chapter(title: 'Next available', paragraphs: ['B', 'C']),
+    ]);
+    const saved = ReadingProgress(bookId: 'updated', chapterIndex: 1, paragraphIndex: 2);
+    final recovered = saved.recoverIn(book);
+    expect(recovered, const ReadingProgress(bookId: 'updated', chapterIndex: 2, paragraphIndex: 0));
+    expect(recovered?.isValidFor(book), isTrue);
+  });
+
   test('Reading progress fraction counts paragraphs, not empty chapters', () {
     const book = Book(id: 'fraction', title: 'Book', language: 'sq', chapters: [
       Chapter(title: 'Cover', paragraphs: []),
