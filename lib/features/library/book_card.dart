@@ -31,8 +31,19 @@ class _BookCardState extends State<BookCard> {
     }
   }
   Future<void> _load() async {
+    final requestedKey = storageKey;
     final prefs = await SharedPreferences.getInstance();
-    try { final data = jsonDecode(prefs.getString(storageKey) ?? '{}') as Map; if (mounted) setState(() { category = data['category'] as String? ?? 'Pa kategori'; cover = data['cover'] as String? ?? ''; }); } catch (_) { /* Book text remains accessible. */ }
+    // A recycled card can receive a different book while preferences load.
+    // Never apply the previous book's cover or category to the new title.
+    if (!mounted || requestedKey != storageKey) return;
+    try {
+      final data = jsonDecode(prefs.getString(requestedKey) ?? '{}') as Map;
+      if (!mounted || requestedKey != storageKey) return;
+      setState(() {
+        category = data['category'] as String? ?? 'Pa kategori';
+        cover = data['cover'] as String? ?? '';
+      });
+    } catch (_) { /* Book text remains accessible. */ }
   }
   Future<void> _edit() async {
     final text = TextEditingController(text: category);
