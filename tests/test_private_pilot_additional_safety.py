@@ -61,5 +61,26 @@ class PrivateZipAdditionalSafetyTests(unittest.TestCase):
             self.validate(make_zip(lambda archive, name: archive.writestr(name, b"x" * (20 * 1024 * 1024 + 1))))
 
 
+    def test_duplicate_photo_bytes_rejected(self):
+        def duplicate(archive, name):
+            archive.writestr(name, fake_jpeg(2))
+        with self.assertRaisesRegex(ValueError, "duplicate JPEG content"):
+            self.validate(make_zip(duplicate))
+
+    def test_nested_archive_path_rejected(self):
+        def nested(archive, name):
+            archive.writestr("../" + name, fake_jpeg(1))
+        with self.assertRaisesRegex(ValueError, "Unsafe pilot archive path"):
+            self.validate(make_zip(nested))
+
+    def test_optional_readme_is_never_extracted(self):
+        data = io.BytesIO()
+        with zipfile.ZipFile(data, "w", compression=zipfile.ZIP_STORED) as archive:
+            for n in range(1, 23):
+                archive.writestr(f"frame_{n:02d}.jpg", fake_jpeg(n))
+            archive.writestr("README_SHQIP.txt", "Private instructions")
+        self.assertEqual(self.validate(data.getvalue()), 22)
+
+
 if __name__ == "__main__":
     unittest.main()
