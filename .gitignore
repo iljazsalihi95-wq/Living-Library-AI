@@ -70,3 +70,14 @@ key.properties
 /assets/story/*
 !/assets/story/.gitkeep
 /Living_Library_22_Fotografite_Assets.zip
+ 
+# Never accidentally publish imported private reading material or local exports
+*.pdf
+*.epub
+*.mobi
+*.azw
+*.azw3
+*.doc
+*.docx
+*.odt
+*.txt.bak
