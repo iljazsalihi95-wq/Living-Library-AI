@@ -26,8 +26,13 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
         total_uncompressed = 0
         for info in archive.infolist():
             name = Path(info.filename).name
-            # Reject every unrelated archive entry, including documents and
-            # hidden files. Only the 22 named JPEGs may enter this private build.
+            # Match the Android in-app importer: the owner's archive may contain
+            # one small root-level README_SHQIP.txt. Never extract or publish it.
+            if info.filename == "README_SHQIP.txt":
+                if info.is_dir() or info.file_size > 64 * 1024:
+                    raise ValueError("Invalid or oversized pilot README")
+                continue
+            # Reject all other unrelated files, including hidden documents.
             if not PATTERN.fullmatch(name):
                 raise ValueError(f"Unexpected entry in private pilot archive: {info.filename}")
             # Never accept ambiguous archive paths or encrypted image entries.
@@ -43,10 +48,10 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
                 raise ValueError(f"Encrypted pilot frame is not supported: {name}")
             if info.is_dir() or info.file_size == 0:
                 raise ValueError(f"Empty or invalid pilot frame: {name}")
-            if name in frames or info.file_size > 20 * 1024 * 1024:
+            if name in frames or info.file_size > 12 * 1024 * 1024:
                 raise ValueError(f"Duplicate or oversized frame: {name}")
             total_uncompressed += info.file_size
-            if total_uncompressed > 22 * 20 * 1024 * 1024:
+            if total_uncompressed > 80 * 1024 * 1024:
                 raise ValueError("Pilot archive exceeds the allowed image size budget")
             if info.compress_size == 0 or info.file_size > 200 * info.compress_size:
                 raise ValueError("Suspicious JPEG compression ratio")
