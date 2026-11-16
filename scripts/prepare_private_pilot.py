@@ -29,8 +29,15 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
             # Match the Android in-app importer: the owner's archive may contain
             # one small root-level README_SHQIP.txt. Never extract or publish it.
             if info.filename == "README_SHQIP.txt":
-                if info.is_dir() or info.file_size > 64 * 1024:
+                # Optional metadata must be unique, regular and unencrypted.
+                # Never extract it or allow duplicate ZIP entries.
+                if "README_SHQIP.txt" in frames:
+                    raise ValueError("Duplicate pilot README")
+                mode = (info.external_attr >> 16) & 0xFFFF
+                if (info.is_dir() or stat.S_IFMT(mode) == stat.S_IFLNK
+                        or info.flag_bits & 0x1 or info.file_size > 64 * 1024):
                     raise ValueError("Invalid or oversized pilot README")
+                frames["README_SHQIP.txt"] = None
                 continue
             # Reject all other unrelated files, including hidden documents.
             if not PATTERN.fullmatch(name):
@@ -59,6 +66,7 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
             if len(data) < 128 or data[:2] != b"\xff\xd8" or data[-2:] != b"\xff\xd9":
                 raise ValueError(f"Invalid JPEG: {name}")
             frames[name] = data
+    frames.pop("README_SHQIP.txt", None)  # Metadata is never an image or output.
     if len(frames) != 22:
         raise ValueError(f"Expected 22 frames, found {len(frames)}")
     # Detect accidental reuse of the same photograph under different frame names.
