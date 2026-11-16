@@ -4,6 +4,22 @@ import 'package:living_library_ai/features/ai_film/pilot_story.dart';
 import 'package:living_library_ai/features/library/book.dart';
 
 void main() {
+  test('Chapter jump skips empty chapters and rejects invalid selections', () {
+    const book = Book(id: 'chapters', title: 'Test', language: 'sq', chapters: [
+      Chapter(title: 'Cover', paragraphs: []),
+      Chapter(title: 'Part one', paragraphs: ['A']),
+      Chapter(title: 'Blank', paragraphs: []),
+      Chapter(title: 'Part two', paragraphs: ['B']),
+      Chapter(title: 'Appendix', paragraphs: []),
+    ]);
+    expect(ReadingProgress.atChapter(book, 0),
+        const ReadingProgress(bookId: 'chapters', chapterIndex: 1, paragraphIndex: 0));
+    expect(ReadingProgress.atChapter(book, 2)?.chapterIndex, 3);
+    expect(ReadingProgress.atChapter(book, 4)?.chapterIndex, 3);
+    expect(ReadingProgress.atChapter(book, -1), isNull);
+    expect(ReadingProgress.atChapter(book, 5), isNull);
+  });
+
   test('Book and reading progress model', () {
     const book = Book(id: 'sample', title: 'Libri im', language: 'sq', chapters: [Chapter(title: 'Hyrje', paragraphs: ['Teksti'])]);
     expect(book.chapters.first.paragraphs.first, 'Teksti');
