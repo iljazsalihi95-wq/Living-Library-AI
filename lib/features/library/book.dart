@@ -59,6 +59,16 @@ class ReadingProgress {
     if (bookId != book.id || !isValid) return null;
     if (isValidFor(book)) return this;
     if (book.chapters.isEmpty) return null;
+    // When a chapter becomes empty after editing, resume at the next
+    // readable chapter rather than unexpectedly jumping backwards.
+    if (chapterIndex < book.chapters.length &&
+        book.chapters[chapterIndex].paragraphs.isEmpty) {
+      for (var chapter = chapterIndex + 1; chapter < book.chapters.length; chapter++) {
+        if (book.chapters[chapter].paragraphs.isNotEmpty) {
+          return ReadingProgress(bookId: bookId, chapterIndex: chapter, paragraphIndex: 0);
+        }
+      }
+    }
     final lastChapter = chapterIndex < book.chapters.length
         ? chapterIndex
         : book.chapters.length - 1;
