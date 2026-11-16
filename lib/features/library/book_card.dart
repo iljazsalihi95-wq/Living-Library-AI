@@ -46,9 +46,14 @@ class _BookCardState extends State<BookCard> {
     } catch (_) { /* Book text remains accessible. */ }
   }
   Future<void> _edit() async {
+    final requestedKey = storageKey;
     final text = TextEditingController(text: category);
     final result = await showDialog<String>(context: context, builder: (c) => AlertDialog(title: const Text('Kategoria e librit'), content: TextField(controller: text, decoration: const InputDecoration(labelText: 'Kategori')), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('Anulo')), FilledButton(onPressed: () => Navigator.pop(c, text.text.trim()), child: const Text('Ruaj'))]));
-    if (result != null && mounted) { setState(() => category = result.isEmpty ? 'Pa kategori' : result); await _save(); }
+    // A dialog can outlive a recycled card; never save a category to another book.
+    if (result != null && mounted && requestedKey == storageKey) {
+      setState(() => category = result.isEmpty ? 'Pa kategori' : result);
+      await _save();
+    }
   }
   Future<void> _image() async {
     final requestedKey = storageKey;
