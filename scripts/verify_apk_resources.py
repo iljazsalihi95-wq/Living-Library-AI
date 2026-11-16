@@ -68,6 +68,19 @@ with zipfile.ZipFile(apk) as archive:
             assert ImageChops.difference(actual, expected[actual.size]).getbbox() is None, f'Launcher pixels differ: {name}'
             found.add(actual.size)
     assert found == set(expected), 'APK launcher densities do not match generated artwork'
+    # Samsung launchers may select roundIcon instead of the regular launcher.
+    # Verify those packaged resources as well, not merely the source PNGs.
+    round_icons = [name for name in names if name.startswith('res/') and name.endswith('/ic_launcher_round.png')]
+    assert len(round_icons) == 5, f'Expected five Samsung round icons, found {len(round_icons)}'
+    round_found = set()
+    for name in round_icons:
+        with Image.open(io.BytesIO(archive.read(name))) as image:
+            actual = image.convert('RGBA')
+            assert actual.size in expected, f'Unexpected round icon size: {name}'
+            assert ImageChops.difference(actual, expected[actual.size]).getbbox() is None, f'Samsung round launcher pixels differ: {name}'
+            round_found.add(actual.size)
+    assert round_found == set(expected), 'Samsung round launcher densities are incomplete'
+
     frames = sorted(Path('assets/story').glob('frame_*.jpg'))
     expected_names = [f'frame_{number:02d}.jpg' for number in range(1, 23)]
     assert [frame.name for frame in frames] == expected_names, (
