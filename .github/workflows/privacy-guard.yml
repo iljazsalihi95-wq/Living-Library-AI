@@ -38,9 +38,11 @@ jobs:
                   violations.append(name + ' (sensitive path)')
                   continue
               path = Path(name)
-              if not path.is_file() or path.stat().st_size > 2_000_000:
+              if not path.is_file():
                   continue
-              data = path.read_bytes()
+              # Inspect a bounded prefix even for large tracked files; do not silently skip them.
+              with path.open('rb') as handle:
+                  data = handle.read(2_000_000)
               if any(pattern.search(data) for pattern in secret_patterns):
                   violations.append(name + ' (credential signature)')
           if violations:
