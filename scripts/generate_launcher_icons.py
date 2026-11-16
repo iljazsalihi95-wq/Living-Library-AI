@@ -42,5 +42,6 @@ for density, px in (("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), 
         saved.load()
         assert saved.format == "PNG", f"Invalid launcher format: {out}"
         assert saved.size == (px, px), f"Incorrect launcher dimensions: {out}"
+        assert saved.convert("RGB").tobytes() == icon.tobytes(), f"Launcher pixels changed during PNG packaging: {out}"
         assert len(saved.getcolors(maxcolors=px * px) or []) > 8, f"Launcher appears blank or unbranded: {out}"
 print("Generated original launcher icons:", MODE)
