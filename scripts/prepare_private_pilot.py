@@ -34,7 +34,7 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
                 if "README_SHQIP.txt" in frames:
                     raise ValueError("Duplicate pilot README")
                 mode = (info.external_attr >> 16) & 0xFFFF
-                if (info.is_dir() or stat.S_IFMT(mode) == stat.S_IFLNK
+                if (info.is_dir() or (stat.S_IFMT(mode) not in (0, stat.S_IFREG))
                         or info.flag_bits & 0x1 or info.file_size > 64 * 1024):
                     raise ValueError("Invalid or oversized pilot README")
                 frames["README_SHQIP.txt"] = None
@@ -49,8 +49,8 @@ def prepare(zip_path: Path, check_only: bool = False) -> int:
                 raise ValueError(f"Unsafe pilot archive path: {info.filename}")
             # ZIP entries can masquerade as images while carrying Unix symlink metadata.
             mode = (info.external_attr >> 16) & 0xFFFF
-            if stat.S_IFMT(mode) == stat.S_IFLNK:
-                raise ValueError(f"Symlink pilot frame is not supported: {name}")
+            if stat.S_IFMT(mode) not in (0, stat.S_IFREG):
+                raise ValueError(f"Non-regular pilot frame is not supported: {name}")
             if info.flag_bits & 0x1:
                 raise ValueError(f"Encrypted pilot frame is not supported: {name}")
             if info.is_dir() or info.file_size == 0:
