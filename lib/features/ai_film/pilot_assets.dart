@@ -118,6 +118,7 @@ class PilotAssets {
     }
     final archive = ZipDecoder().decodeBytes(bytes);
     var totalUncompressed = 0;
+    var sawReadme = false;
     final frames = <String, Uint8List>{};
     for (final entry in archive) {
       if (!entry.isFile) {
@@ -133,6 +134,10 @@ class PilotAssets {
       // The owner's original 22-frame archive includes a harmless Albanian
       // README at the ZIP root. Ignore that exact file, not arbitrary extras.
       if (rawName == 'README_SHQIP.txt') {
+        if (sawReadme) {
+          throw const FormatException('README i përsëritur në ZIP.');
+        }
+        sawReadme = true;
         if (entry.size > 64 * 1024) {
           throw const FormatException('README është tepër i madh.');
         }
