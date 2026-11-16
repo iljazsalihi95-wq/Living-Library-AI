@@ -41,6 +41,24 @@ class ReadingProgress {
     return null;
   }
 
+  /// Jump to the selected chapter without producing a blank reading screen.
+  /// If the selected chapter is empty, continue forward to the next readable
+  /// chapter; otherwise fall back to the preceding readable chapter.
+  static ReadingProgress? atChapter(Book book, int chapterIndex) {
+    if (chapterIndex < 0 || chapterIndex >= book.chapters.length) return null;
+    for (var i = chapterIndex; i < book.chapters.length; i++) {
+      if (book.chapters[i].paragraphs.isNotEmpty) {
+        return ReadingProgress(bookId: book.id, chapterIndex: i, paragraphIndex: 0);
+      }
+    }
+    for (var i = chapterIndex - 1; i >= 0; i--) {
+      if (book.chapters[i].paragraphs.isNotEmpty) {
+        return ReadingProgress(bookId: book.id, chapterIndex: i, paragraphIndex: 0);
+      }
+    }
+    return null;
+  }
+
   /// Find the final readable paragraph, skipping empty trailing chapters.
   /// Useful for resuming a finished book without creating an invalid bookmark.
   static ReadingProgress? lastIn(Book book) {
