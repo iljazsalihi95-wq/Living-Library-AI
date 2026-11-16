@@ -28,7 +28,7 @@ jobs:
           ]
           violations = []
           for name in filter(None, paths):
-              if forbidden_names.search(name) or private_paths.search(name):
+              # Only the 22 legacy placeholder paths are permitted in the public story tree.\n              # New pilot images must be imported locally, never committed.\n              story_path = re.fullmatch(r'assets/story/frame_(0[1-9]|1[0-9]|2[0-2])\\.jpg', name)\n              if name.startswith('assets/story/') and not story_path:\n                  violations.append(name + ' (unapproved public story asset)')\n                  continue\n              if forbidden_names.search(name) or private_paths.search(name):
                   violations.append(name + ' (sensitive path)')
                   continue
               path = Path(name)
