@@ -51,26 +51,33 @@ class _BookCardState extends State<BookCard> {
     if (result != null && mounted) { setState(() => category = result.isEmpty ? 'Pa kategori' : result); await _save(); }
   }
   Future<void> _image() async {
+    final requestedKey = storageKey;
     try {
       final files = await FilePicker.pickFiles(type: FileType.image);
-      if (files.isEmpty) return;
+      if (files.isEmpty || !mounted || requestedKey != storageKey) return;
       final file = files.single;
       // Check the file size before allocating its bytes on Android.
       if (file.path != null && await File(file.path!).length() > 12 * 1024 * 1024) {
         throw const FormatException('Cover too large');
       }
       final bytes = await file.readAsBytes();
+      if (!mounted || requestedKey != storageKey) return;
       if (bytes.length > 12 * 1024 * 1024) throw const FormatException('Cover too large');
       final dir = await getApplicationDocumentsDirectory();
       final path = '${dir.path}/cover_${DateTime.now().microsecondsSinceEpoch}.${file.extension ?? 'jpg'}';
       await File(path).writeAsBytes(bytes, flush: true);
-      if (!mounted) return;
+      if (!mounted || requestedKey != storageKey) {
+        await File(path).delete();
+        return;
+      }
       setState(() => cover = path); await _save();
     } catch (_) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kopertina nuk mund të ruhej.'))); }
   }
   Future<void> _save() async {
+    final requestedKey = storageKey;
+    final snapshot = jsonEncode({'category': category, 'cover': cover});
     final prefs = await SharedPreferences.getInstance();
-    final ok = await prefs.setString(storageKey, jsonEncode({'category':category,'cover':cover}));
+    final ok = await prefs.setString(requestedKey, snapshot);
     if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Të dhënat e kopertinës nuk u ruajtën.')));
   }
   @override Widget build(BuildContext context) => Card(child: ListTile(
