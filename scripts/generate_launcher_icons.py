@@ -34,7 +34,9 @@ for density, px in (("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), 
     out.parent.mkdir(parents=True, exist_ok=True)
     icon = im.resize((px, px), Image.Resampling.LANCZOS)
     assert icon.size == (px, px)
-    icon.save(out)
+    # Lossless PNG optimization keeps the approved premium artwork pixel-identical
+    # while reducing launcher resource bytes in the Samsung APK.
+    icon.save(out, format="PNG", optimize=True)
     # Verify the actual PNG written to disk, not only the in-memory image.
     with Image.open(out) as saved:
         saved.load()
