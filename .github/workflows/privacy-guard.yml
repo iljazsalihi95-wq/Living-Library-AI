@@ -31,7 +31,7 @@ jobs:
               # Only the 22 legacy placeholder paths are permitted in the public story tree.
               # New pilot images must be imported locally, never committed.
               story_path = re.fullmatch(r'assets/story/frame_(0[1-9]|1[0-9]|2[0-2])\.jpg', name)
-              if name.startswith('assets/story/') and not story_path:
+              if name.startswith('assets/story/') and not story_path and name not in ('assets/story/.gitkeep', 'assets/story/README.md'):
                   violations.append(name + ' (unapproved public story asset)')
                   continue
               if forbidden_names.search(name) or private_paths.search(name):
