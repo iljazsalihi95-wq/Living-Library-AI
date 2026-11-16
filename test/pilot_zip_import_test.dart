@@ -27,6 +27,20 @@ void main() {
     }
   });
 
+  test('rejects repeated README metadata in a pilot archive', () {
+    final archive = Archive();
+    final jpeg = Uint8List.fromList([0xff, 0xd8, 0xff, 0xd9]);
+    for (var i = 1; i <= 22; i++) {
+      archive.addFile(ArchiveFile(
+        'frame_${i.toString().padLeft(2, '0')}.jpg', jpeg.length, jpeg));
+    }
+    final readme = Uint8List.fromList([65]);
+    archive.addFile(ArchiveFile('README_SHQIP.txt', 1, readme));
+    archive.addFile(ArchiveFile('README_SHQIP.txt', 1, readme));
+    final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
+    expect(() => PilotAssets.decodeFrames(bytes), throwsFormatException);
+  });
+
   test('rejects incomplete illustration archives', () {
     expect(() => PilotAssets.decodeFrames(_makeZip(frameCount: 21)), throwsFormatException);
   });
